@@ -939,14 +939,18 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <param name="e1">First message to compare.</param>
 	/// <param name="e2">Second message to compare.</param>
 	/// <returns>Whether the two messages are equal.</returns>
-	public static bool operator ==(DiscordMessage e1, DiscordMessage e2)
+	public static bool operator ==(DiscordMessage? e1, DiscordMessage? e2)
 	{
 		var o1 = e1 as object;
 		var o2 = e2 as object;
 
-		return (o1 != null || o2 == null)
-			&& (o1 == null || o2 != null)
-			&& ((o1 == null && o2 == null) || (e1.Id == e2.Id && e1.ChannelId == e2.ChannelId));
+		if (o1 is null && o2 is null)
+			return true;
+
+		if (o1 is null || o2 is null)
+			return false;
+
+		return e1.Id == e2.Id && e1.ChannelId == e2.ChannelId;
 	}
 
 	/// <summary>
@@ -955,6 +959,6 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <param name="e1">First message to compare.</param>
 	/// <param name="e2">Second message to compare.</param>
 	/// <returns>Whether the two messages are not equal.</returns>
-	public static bool operator !=(DiscordMessage e1, DiscordMessage e2)
+	public static bool operator !=(DiscordMessage? e1, DiscordMessage? e2)
 		=> !(e1 == e2);
 }

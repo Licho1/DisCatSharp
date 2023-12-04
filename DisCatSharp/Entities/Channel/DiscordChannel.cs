@@ -1495,12 +1495,17 @@ public class DiscordChannel : SnowflakeObject, IEquatable<DiscordChannel>
 	/// <param name="e1">First channel to compare.</param>
 	/// <param name="e2">Second channel to compare.</param>
 	/// <returns>Whether the two channels are equal.</returns>
-	public static bool operator ==(DiscordChannel e1, DiscordChannel e2)
+	public static bool operator ==(DiscordChannel? e1, DiscordChannel? e2)
 	{
 		var o1 = e1 as object;
 		var o2 = e2 as object;
 
-		return (o1 != null || o2 == null) && (o1 == null || o2 != null) && ((o1 == null && o2 == null) || e1.Id == e2.Id);
+		if (o1 is null && o2 is null)
+			return true;
+		if (o1 is null || o2 is null)
+			return false;
+
+		return e1.Id == e2.Id;
 	}
 
 	/// <summary>
@@ -1509,6 +1514,6 @@ public class DiscordChannel : SnowflakeObject, IEquatable<DiscordChannel>
 	/// <param name="e1">First channel to compare.</param>
 	/// <param name="e2">Second channel to compare.</param>
 	/// <returns>Whether the two channels are not equal.</returns>
-	public static bool operator !=(DiscordChannel e1, DiscordChannel e2)
+	public static bool operator !=(DiscordChannel? e1, DiscordChannel? e2)
 		=> !(e1 == e2);
 }

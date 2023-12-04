@@ -82,6 +82,15 @@ public class DiscordUser : SnowflakeObject, IEquatable<DiscordUser>
 	[JsonProperty("global_name", NullValueHandling = NullValueHandling.Ignore), DiscordInExperiment]
 	public virtual string GlobalName { get; internal set; }
 
+	public string Name
+	{
+		get
+		{
+			if (!string.IsNullOrEmpty(this.GlobalName)) return this.GlobalName;
+			else return this.Username ?? "";
+		}
+	}
+
 	/// <summary>
 	/// <para>Whether this user account is migrated to the new username system.</para>
 	/// <para>Learn more at <see href="https://dis.gd/usernames">dis.gd/usernames</see>.</para>
