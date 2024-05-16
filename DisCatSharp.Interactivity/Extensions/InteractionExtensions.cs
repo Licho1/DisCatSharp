@@ -35,6 +35,7 @@ public static class InteractionExtensions
 
 	/// <summary>
 	/// Sends multiple modals to the user with a prompt to open the next one.
+	/// <para><b>After the last modal, this method automatically responds with the thinking state. Use <see cref="DiscordInteraction.EditOriginalResponseAsync(DiscordWebhookBuilder)"/> to interact with the response.</b></para>
 	/// </summary>
 	/// <param name="interaction">The interaction to create a response to.</param>
 	/// <param name="modals">The modal pages.</param>
@@ -52,7 +53,7 @@ public static class InteractionExtensions
 
 		timeOutOverride ??= TimeSpan.FromMinutes(15);
 
-		Dictionary<string, string> caughtResponses = new();
+		Dictionary<string, string> caughtResponses = [];
 
 		var previousInteraction = interaction;
 
@@ -64,27 +65,34 @@ public static class InteractionExtensions
 			{
 				await previousInteraction.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, b.OpenMessage.AddComponents(b.OpenButton)).ConfigureAwait(false);
 				var originalResponse = await previousInteraction.GetOriginalResponseAsync().ConfigureAwait(false);
-				var modalOpen = await interactivity.WaitForButtonAsync(originalResponse, new List<DiscordButtonComponent> { b.OpenButton }, timeOutOverride).ConfigureAwait(false);
+				var modalOpen = await interactivity.WaitForButtonAsync(originalResponse, new List<DiscordButtonComponent>
+				{
+					b.OpenButton
+				}, timeOutOverride).ConfigureAwait(false);
 
 				if (modalOpen.TimedOut)
 				{
 					_ = previousInteraction.EditOriginalResponseAsync(new DiscordWebhookBuilder().WithContent(b.OpenMessage.Content).AddComponents(b.OpenButton.Disable()));
-					return new PaginatedModalResponse { TimedOut = true };
+					return new()
+					{
+						TimedOut = true
+					};
 				}
 
 				await modalOpen.Result.Interaction.CreateInteractionModalResponseAsync(modal).ConfigureAwait(false);
 			}
 			else
-			{
 				await previousInteraction.CreateInteractionModalResponseAsync(modal).ConfigureAwait(false);
-			}
 
 			_ = previousInteraction.EditOriginalResponseAsync(new DiscordWebhookBuilder().WithContent(b.OpenMessage.Content).AddComponents(b.OpenButton.Disable()));
 
 			var modalResult = await interactivity.WaitForModalAsync(modal.CustomId, timeOutOverride).ConfigureAwait(false);
 
 			if (modalResult.TimedOut)
-				return new PaginatedModalResponse { TimedOut = true };
+				return new()
+				{
+					TimedOut = true
+				};
 
 			foreach (var submissions in modalResult.Result.Interaction.Data.Components)
 				caughtResponses.Add(submissions.CustomId, submissions.Value);
@@ -94,6 +102,11 @@ public static class InteractionExtensions
 
 		await previousInteraction.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource, new DiscordInteractionResponseBuilder().AsEphemeral()).ConfigureAwait(false);
 
-		return new PaginatedModalResponse { TimedOut = false, Responses = caughtResponses, Interaction = previousInteraction };
+		return new()
+		{
+			TimedOut = false,
+			Responses = caughtResponses,
+			Interaction = previousInteraction
+		};
 	}
 }

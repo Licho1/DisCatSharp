@@ -19,20 +19,19 @@ jobs:
       with:
         token:  ${{ secrets.NYUW_TOKEN_GH }}
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3.2.0
+      uses: actions/setup-dotnet@v4.0.0
       with:
         dotnet-version: |
-          8.0.100
+          8.0.204
           7.0.403
-          6.x
     - name: Git fetch unshallow
       run: git fetch --unshallow
     - name: Install DocFX
-      run: dotnet tool update -g docfx --version 2.71.0
+      run: dotnet tool update -g docfx
     - name: Restore packages
-      run: dotnet restore DisCatSharp.sln
+      run: dotnet restore --no-cache -f -v minimal DisCatSharp.sln
     - name: Build library
-      run: dotnet build -c Release --no-restore -v minimal -f net7.0 DisCatSharp.sln
+      run: dotnet build -c Release --no-restore -v minimal -f net8.0 DisCatSharp.sln
       timeout-minutes: 7
       continue-on-error: true
     #- name: Add Custom Plugins
@@ -43,7 +42,7 @@ jobs:
       shell: pwsh
       run: ./DisCatSharp.Tools/pack-docs.ps1 -DocsPath "./DisCatSharp.Docs" -OutputPath "./" -PackageName "dcs-docs"
     - name: Upload packed docs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dcs-docs.zip
         path: dcs-docs.zip
@@ -75,7 +74,7 @@ jobs:
       shell: pwsh
       run: Get-ChildItem -Exclude .git* | Remove-Item -Recurse -Force
     - name: Download packed docs
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dcs-docs.zip
     - name: Extract new docs
@@ -83,8 +82,9 @@ jobs:
     - name: Deleze zip
       run: rm dcs-docs.zip
     - name: Delete packed docs
-      uses: geekyeggo/delete-artifact@v2
+      uses: geekyeggo/delete-artifact@v5
       with:
+        token: ${{ secrets.NYUW_TOKEN_GH }}
         name: dcs-docs.zip
     - name: Add .htaccess
       run: rm -f .htaccess && wget https://gist.githubusercontent.com/Lulalaby/8a032d0ddebb9125691094edc67b6593/raw/0c4bf0423cfe334fdd5092b014d2481759dd052a/.htaccess
@@ -108,7 +108,7 @@ jobs:
     needs: documentation
     steps:
     - name: Get SSH Agent
-      uses: webfactory/ssh-agent@v0.8.0
+      uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ secrets.AITSYS_SSH }}
     - name: Publish on server

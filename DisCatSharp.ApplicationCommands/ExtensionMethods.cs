@@ -20,10 +20,12 @@ public static class ExtensionMethods
 	/// <param name="client">Client to enable application commands for.</param>
 	/// <param name="config">Configuration to use.</param>
 	/// <returns>Created <see cref="ApplicationCommandsExtension"/>.</returns>
-	public static ApplicationCommandsExtension UseApplicationCommands(this DiscordClient client,
-		ApplicationCommandsConfiguration config = null)
+	public static ApplicationCommandsExtension UseApplicationCommands(
+		this DiscordClient client,
+		ApplicationCommandsConfiguration? config = null
+	)
 	{
-		if (client.GetExtension<ApplicationCommandsExtension>() != null)
+		if (client.GetExtension<ApplicationCommandsExtension>() is not null)
 			throw new InvalidOperationException("Application commands are already enabled for that client.");
 
 		var scomm = new ApplicationCommandsExtension(config);
@@ -47,10 +49,7 @@ public static class ExtensionMethods
 	public static async Task<IReadOnlyDictionary<int, ApplicationCommandsExtension>> GetApplicationCommandsAsync(this DiscordShardedClient client)
 	{
 		await client.InitializeShardsAsync().ConfigureAwait(false);
-		var modules = new Dictionary<int, ApplicationCommandsExtension>();
-		foreach (var shard in client.ShardClients.Values)
-			modules.Add(shard.ShardId, shard.GetExtension<ApplicationCommandsExtension>());
-		return modules;
+		return client.ShardClients.Values.ToDictionary(shard => shard.ShardId, shard => shard.GetExtension<ApplicationCommandsExtension>()!);
 	}
 
 	/// <summary>
@@ -59,7 +58,7 @@ public static class ExtensionMethods
 	/// <param name="extensions">Sharding extensions.</param>
 	/// <typeparam name="T">The command class to register.</typeparam>
 	/// <param name="translationSetup">A callback to setup translations with.</param>
-	public static void RegisterGlobalCommands<T>(this IReadOnlyDictionary<int, ApplicationCommandsExtension> extensions, Action<ApplicationCommandsTranslationContext> translationSetup = null) where T : ApplicationCommandsModule
+	public static void RegisterGlobalCommands<T>(this IReadOnlyDictionary<int, ApplicationCommandsExtension> extensions, Action<ApplicationCommandsTranslationContext>? translationSetup = null) where T : ApplicationCommandsModule
 	{
 		foreach (var extension in extensions.Values)
 			extension.RegisterGlobalCommands<T>(translationSetup);
@@ -71,10 +70,11 @@ public static class ExtensionMethods
 	/// <param name="extensions">Sharding extensions.</param>
 	/// <param name="type">The <see cref="System.Type"/> of the command class to register.</param>
 	/// <param name="translationSetup">A callback to setup translations with.</param>
-	public static void RegisterGlobalCommands(this IReadOnlyDictionary<int, ApplicationCommandsExtension> extensions, Type type, Action<ApplicationCommandsTranslationContext> translationSetup = null)
+	public static void RegisterGlobalCommands(this IReadOnlyDictionary<int, ApplicationCommandsExtension> extensions, Type type, Action<ApplicationCommandsTranslationContext>? translationSetup = null)
 	{
 		if (!typeof(ApplicationCommandsModule).IsAssignableFrom(type))
 			throw new ArgumentException("Command classes have to inherit from ApplicationCommandsModule", nameof(type));
+
 		foreach (var extension in extensions.Values)
 			extension.RegisterGlobalCommands(type, translationSetup);
 	}
@@ -86,11 +86,10 @@ public static class ExtensionMethods
 	/// <param name="extensions">Sharding extensions.</param>
 	/// <param name="guildId">The guild id to register it on.</param>
 	/// <param name="translationSetup">A callback to setup translations with.</param>
-	public static void RegisterGuildCommands<T>(this IReadOnlyDictionary<int, ApplicationCommandsExtension> extensions, ulong guildId, Action<ApplicationCommandsTranslationContext> translationSetup = null) where T : ApplicationCommandsModule
+	public static void RegisterGuildCommands<T>(this IReadOnlyDictionary<int, ApplicationCommandsExtension> extensions, ulong guildId, Action<ApplicationCommandsTranslationContext>? translationSetup = null) where T : ApplicationCommandsModule
 	{
 		foreach (var extension in extensions.Values)
 			extension.RegisterGuildCommands<T>(guildId, translationSetup);
-
 	}
 
 	/// <summary>
@@ -104,6 +103,7 @@ public static class ExtensionMethods
 	{
 		if (!typeof(ApplicationCommandsModule).IsAssignableFrom(type))
 			throw new ArgumentException("Command classes have to inherit from ApplicationCommandsModule", nameof(type));
+
 		foreach (var extension in extensions.Values)
 			extension.RegisterGuildCommands(type, guildId, translationSetup);
 	}
@@ -114,7 +114,7 @@ public static class ExtensionMethods
 	/// <param name="client">Client to enable application commands on.</param>
 	/// <param name="config">Configuration to use.</param>
 	/// <returns>A dictionary of created <see cref="ApplicationCommandsExtension"/> with the key being the shard id.</returns>
-	public static async Task<IReadOnlyDictionary<int, ApplicationCommandsExtension>> UseApplicationCommandsAsync(this DiscordShardedClient client, ApplicationCommandsConfiguration config = null)
+	public static async Task<IReadOnlyDictionary<int, ApplicationCommandsExtension>> UseApplicationCommandsAsync(this DiscordShardedClient client, ApplicationCommandsConfiguration? config = null)
 	{
 		var modules = new Dictionary<int, ApplicationCommandsExtension>();
 		await client.InitializeShardsAsync().ConfigureAwait(false);
@@ -135,23 +135,19 @@ public static class ExtensionMethods
 	/// <returns>The name.</returns>
 	public static string GetName<T>(this T e) where T : IConvertible
 	{
-		if (e is Enum)
-		{
-			var type = e.GetType();
-			var values = Enum.GetValues(type);
+		if (e is not Enum)
+			return null;
 
-			foreach (int val in values)
-			{
-				if (val == e.ToInt32(CultureInfo.InvariantCulture))
-				{
-					var memInfo = type.GetMember(type.GetEnumName(val));
+		var type = e.GetType();
+		var values = Enum.GetValues(type);
 
-					return memInfo[0]
-						.GetCustomAttributes(typeof(ChoiceNameAttribute), false)
-						.FirstOrDefault() is ChoiceNameAttribute nameAttribute ? nameAttribute.Name : type.GetEnumName(val);
-				}
-			}
-		}
-		return null;
+		return (from int val in values
+		        where val == e.ToInt32(CultureInfo.InvariantCulture)
+		        let memInfo = type.GetMember(type.GetEnumName(val))
+		        select memInfo[0]
+			        .GetCustomAttributes(typeof(ChoiceNameAttribute), false)
+			        .FirstOrDefault() is ChoiceNameAttribute nameAttribute
+			        ? nameAttribute.Name
+			        : type.GetEnumName(val)).FirstOrDefault()!;
 	}
 }

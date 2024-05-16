@@ -1,4 +1,3 @@
-
 using System;
 using System.Net;
 using System.Net.Http.Headers;
@@ -17,10 +16,9 @@ public sealed class LavalinkRestException : Exception
 	/// </summary>
 	[JsonIgnore]
 	public DateTimeOffset Timestamp => Utilities.GetDateTimeOffsetFromMilliseconds(this._timestamp);
+
 	[JsonProperty("timestamp")]
-#pragma warning disable CS0649 // Field 'LavalinkRestException._timestamp' is never assigned to, and will always have its default value 0
 	private readonly long _timestamp;
-#pragma warning restore CS0649 // Field 'LavalinkRestException._timestamp' is never assigned to, and will always have its default value 0
 
 	/// <summary>
 	/// Gets the response http status code.

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using DisCatSharp.Enums;
+using DisCatSharp.Exceptions;
 using DisCatSharp.Net.Abstractions;
 
 using Newtonsoft.Json;
@@ -25,8 +26,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		this._attachmentsLazy = new(() => new ReadOnlyCollection<DiscordAttachment>(this.AttachmentsInternal));
 		this._embedsLazy = new(() => new ReadOnlyCollection<DiscordEmbed>(this.EmbedsInternal));
 		this._mentionedChannelsLazy = new(() => this.MentionedChannelsInternal != null
-				? new ReadOnlyCollection<DiscordChannel>(this.MentionedChannelsInternal)
-				: Array.Empty<DiscordChannel>());
+			? new ReadOnlyCollection<DiscordChannel>(this.MentionedChannelsInternal)
+			: Array.Empty<DiscordChannel>());
 		this._mentionedRolesLazy = new(() => this.MentionedRolesInternal != null ? new ReadOnlyCollection<DiscordRole>(this.MentionedRolesInternal) : Array.Empty<DiscordRole>());
 		this.MentionedUsersLazy = new(() => new ReadOnlyCollection<DiscordUser>(this.MentionedUsersInternal));
 		this._reactionsLazy = new(() => new ReadOnlyCollection<DiscordReaction>(this.ReactionsInternal));
@@ -38,10 +39,10 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 				gid = this.Channel is DiscordDmChannel
 					? "@me"
 					: this.Channel is DiscordThreadChannel
-					? this.INTERNAL_THREAD?.GuildId?.ToString(CultureInfo.InvariantCulture)
-					: this.GuildId.HasValue
-					? this.GuildId.Value.ToString(CultureInfo.InvariantCulture)
-					: this.Channel.GuildId?.ToString(CultureInfo.InvariantCulture);
+						? this.INTERNAL_THREAD?.GuildId?.ToString(CultureInfo.InvariantCulture)
+						: this.GuildId.HasValue
+							? this.GuildId.Value.ToString(CultureInfo.InvariantCulture)
+							: this.Channel.GuildId?.ToString(CultureInfo.InvariantCulture);
 
 			var cid = this.ChannelId.ToString(CultureInfo.InvariantCulture);
 			var mid = this.Id.ToString(CultureInfo.InvariantCulture);
@@ -68,17 +69,17 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		this.Discord = other.Discord;
 
 		this.AttachmentsInternal = other.AttachmentsInternal; // the attachments cannot change, thus no need to copy and reallocate.
-		this.EmbedsInternal = new(other.EmbedsInternal);
+		this.EmbedsInternal = [..other.EmbedsInternal];
 
 		if (other.MentionedChannelsInternal != null)
-			this.MentionedChannelsInternal = new(other.MentionedChannelsInternal);
+			this.MentionedChannelsInternal = [..other.MentionedChannelsInternal];
 		if (other.MentionedRolesInternal != null)
-			this.MentionedRolesInternal = new(other.MentionedRolesInternal);
+			this.MentionedRolesInternal = [..other.MentionedRolesInternal];
 		if (other.MentionedRoleIds != null)
-			this.MentionedRoleIds = new(other.MentionedRoleIds);
-		this.MentionedUsersInternal = new(other.MentionedUsersInternal);
-		this.ReactionsInternal = new(other.ReactionsInternal);
-		this.StickersInternal = new(other.StickersInternal);
+			this.MentionedRoleIds = [..other.MentionedRoleIds];
+		this.MentionedUsersInternal = [..other.MentionedUsersInternal];
+		this.ReactionsInternal = [..other.ReactionsInternal];
+		this.StickersInternal = [..other.StickersInternal];
 
 		this.Author = other.Author;
 		this.ChannelId = other.ChannelId;
@@ -91,6 +92,17 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		this.TimestampRaw = other.TimestampRaw;
 		this.WebhookId = other.WebhookId;
 		this.GuildId = other.GuildId;
+		this.Resolved = other.Resolved;
+		this.Interaction = other.Interaction;
+		this.InteractionMetadata = other.InteractionMetadata;
+		if (other.InteractionMetadata is not null && this.InteractionMetadata is not null)
+			this.InteractionMetadata.Discord = other.InteractionMetadata.Discord;
+		this.Poll = other.Poll;
+		if (this.Poll is null)
+			return;
+
+		this.Poll.ChannelId = this.ChannelId;
+		this.Poll.MessageId = this.Id;
 	}
 
 	/// <summary>
@@ -141,8 +153,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	[JsonProperty("author", NullValueHandling = NullValueHandling.Ignore)]
 	public DiscordUser Author { get; internal set; }
 
-	[JsonProperty("member", NullValueHandling = NullValueHandling.Ignore)]
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
+	[JsonProperty("member", NullValueHandling = NullValueHandling.Ignore), System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
 	private TransportMember TRANSPORT_MEMBER { get; set; }
 
 	/// <summary>
@@ -156,8 +167,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// </summary>
 	[JsonIgnore]
 	public DateTimeOffset Timestamp
-		=> !string.IsNullOrWhiteSpace(this.TimestampRaw) && DateTimeOffset.TryParse(this.TimestampRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dto) ?
-			dto : this.CreationTimestamp;
+		=> !string.IsNullOrWhiteSpace(this.TimestampRaw) && DateTimeOffset.TryParse(this.TimestampRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dto) ? dto : this.CreationTimestamp;
 
 	/// <summary>
 	/// Gets the message's creation timestamp as raw string.
@@ -170,8 +180,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// </summary>
 	[JsonIgnore]
 	public DateTimeOffset? EditedTimestamp
-		=> !string.IsNullOrWhiteSpace(this.EditedTimestampRaw) && DateTimeOffset.TryParse(this.EditedTimestampRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dto) ?
-			dto : null;
+		=> !string.IsNullOrWhiteSpace(this.EditedTimestampRaw) && DateTimeOffset.TryParse(this.EditedTimestampRaw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dto) ? dto : null;
 
 	/// <summary>
 	/// Gets the message's edit timestamp as raw string. Will be null if the message was not edited.
@@ -207,6 +216,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 
 	[JsonProperty("mentions", NullValueHandling = NullValueHandling.Ignore)]
 	internal List<DiscordUser> MentionedUsersInternal;
+
 	[JsonIgnore]
 	internal readonly Lazy<IReadOnlyList<DiscordUser>> MentionedUsersLazy;
 
@@ -237,6 +247,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 
 	[JsonIgnore]
 	internal List<DiscordChannel> MentionedChannelsInternal;
+
 	[JsonIgnore]
 	private readonly Lazy<IReadOnlyList<DiscordChannel>> _mentionedChannelsLazy;
 
@@ -248,7 +259,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		=> this._attachmentsLazy.Value;
 
 	[JsonProperty("attachments", NullValueHandling = NullValueHandling.Ignore)]
-	internal List<DiscordAttachment> AttachmentsInternal = new();
+	internal List<DiscordAttachment> AttachmentsInternal = [];
+
 	[JsonIgnore]
 	private readonly Lazy<IReadOnlyList<DiscordAttachment>> _attachmentsLazy;
 
@@ -260,7 +272,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		=> this._embedsLazy.Value;
 
 	[JsonProperty("embeds", NullValueHandling = NullValueHandling.Ignore)]
-	internal List<DiscordEmbed> EmbedsInternal = new();
+	internal List<DiscordEmbed> EmbedsInternal = [];
+
 	[JsonIgnore]
 	private readonly Lazy<IReadOnlyList<DiscordEmbed>> _embedsLazy;
 
@@ -272,7 +285,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		=> this._reactionsLazy.Value;
 
 	[JsonProperty("reactions", NullValueHandling = NullValueHandling.Ignore)]
-	internal List<DiscordReaction> ReactionsInternal = new();
+	internal List<DiscordReaction> ReactionsInternal = [];
+
 	[JsonIgnore]
 	private readonly Lazy<IReadOnlyList<DiscordReaction>> _reactionsLazy;
 
@@ -282,6 +296,11 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	[JsonProperty("nonce", NullValueHandling = NullValueHandling.Ignore)]
 	public string Nonce { get; internal set; }
 
+	/// <summary>
+	/// Gets whether the <see cref="Nonce"/> is enforced to be validated.
+	/// </summary>
+	[JsonProperty("enforce_nonce", NullValueHandling = NullValueHandling.Ignore)]
+	public bool EnforceNonce { get; internal set; }
 
 	/// <summary>
 	/// Gets whether the message is pinned.
@@ -350,6 +369,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// </summary>
 	[JsonIgnore]
 	public Uri JumpLink => this._jumpLink.Value;
+
 	private readonly Lazy<Uri> _jumpLink;
 
 	/// <summary>
@@ -360,7 +380,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		=> this._stickersLazy.Value;
 
 	[JsonProperty("sticker_items", NullValueHandling = NullValueHandling.Ignore)]
-	internal List<DiscordSticker> StickersInternal = new();
+	internal List<DiscordSticker> StickersInternal = [];
+
 	[JsonIgnore]
 	private readonly Lazy<IReadOnlyList<DiscordSticker>> _stickersLazy;
 
@@ -376,7 +397,6 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	[JsonIgnore]
 	public DiscordGuild Guild
 		=> this.GuildId.HasValue && this.Discord.Guilds.TryGetValue(this.GuildId.Value, out var guild) ? guild : null;
-
 
 	/// <summary>
 	/// Gets the message object for the referenced message
@@ -396,12 +416,54 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// </summary>
 	[JsonIgnore]
 	public DiscordThreadChannel Thread
-		=> this._startedThread != null! ? this._startedThread! : this.GuildId.HasValue && this.Guild.ThreadsInternal.TryGetValue(this.Id, out var thread) ? thread! : null!;
+		=> this._startedThread != null!
+			? this._startedThread!
+			: this.GuildId.HasValue && this.Guild.ThreadsInternal.TryGetValue(this.Id, out var thread)
+				? thread!
+				: null!;
 
 	[JsonProperty("thread", NullValueHandling = NullValueHandling.Ignore)]
-#pragma warning disable CS0649 // Field 'DiscordMessage._startedThread' is never assigned to, and will always have its default value null
 	private readonly DiscordThreadChannel _startedThread;
-#pragma warning restore CS0649 // Field 'DiscordMessage._startedThread' is never assigned to, and will always have its default value null
+
+	/// <summary>
+	/// Gets the Discord snowflake objects resolved from this message's auto-populated select menus.
+	/// </summary>
+	[JsonProperty("resolved", NullValueHandling = NullValueHandling.Ignore)]
+	public DiscordInteractionResolvedCollection Resolved { get; internal set; }
+
+	/// <summary>
+	/// Gets the interaction metadata if the message is a response to an interaction.
+	/// </summary>
+	[JsonProperty("interaction_metadata", NullValueHandling = NullValueHandling.Ignore)]
+	public DiscordInteractionMetadata? InteractionMetadata { get; internal set; }
+
+	/// <summary>
+	/// Gets the poll of the message if one was attached.
+	/// </summary>
+	[JsonProperty("poll", NullValueHandling = NullValueHandling.Ignore)]
+	public DiscordPoll? Poll { get; internal set; }
+
+	/// <summary>
+	/// Gets whether this message has a poll.
+	/// </summary>
+	[JsonIgnore]
+	public bool HasPoll
+		=> this.Poll is not null;
+
+	/// <summary>
+	/// <para>Ends the poll on this message.</para>
+	/// <para>Works only for own polls and if they are not expired yet. </para>
+	/// </summary>
+	/// <returns>The fresh discord message.</returns>
+	/// <exception cref="InvalidOperationException">Thrown when the message has no poll, the author is not us, or the poll has been already ended.</exception>
+	public async Task<DiscordMessage> EndPollAsync()
+		=> this.Poll is null
+			? throw new InvalidOperationException("This message has no poll.")
+			: this.Author.Id != this.Discord.CurrentUser.Id
+				? throw new InvalidOperationException("Can only end own polls.")
+				: this.Poll.Results?.IsFinalized ?? false
+					? throw new InvalidOperationException("The poll was already ended.")
+					: await this.Discord.ApiClient.EndPollAsync(this.ChannelId, this.Id);
 
 	/// <summary>
 	/// Build the message reference.
@@ -458,7 +520,6 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		return reference;
 	}
 
-
 	/// <summary>
 	/// Gets the mentions.
 	/// </summary>
@@ -467,14 +528,19 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	{
 		var mentions = new List<IMention>();
 
-		if (this.ReferencedMessage != null && this.MentionedUsersInternal.Contains(this.ReferencedMessage.Author))
-			mentions.Add(new RepliedUserMention());
+		try
+		{
+			if (this.ReferencedMessage is not null && this.MentionedUsersInternal.Count is not 0 && this.MentionedUsersInternal.Contains(this.ReferencedMessage.Author))
+				mentions.Add(new RepliedUserMention());
 
-		if (this.MentionedUsersInternal.Any())
-			mentions.AddRange(this.MentionedUsersInternal.Select(m => (IMention)new UserMention(m)));
+			if (this.MentionedUsersInternal.Count is not 0)
+				mentions.AddRange(this.MentionedUsersInternal.Select(m => (IMention)new UserMention(m)));
 
-		if (this.MentionedRoleIds.Any())
-			mentions.AddRange(this.MentionedRoleIds.Select(r => (IMention)new RoleMention(r)));
+			if (this.MentionedRoleIds.Count is not 0)
+				mentions.AddRange(this.MentionedRoleIds.Select(r => (IMention)new RoleMention(r)));
+		}
+		catch
+		{ }
 
 		return mentions;
 	}
@@ -485,13 +551,12 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	internal void PopulateMentions()
 	{
 		var guild = this.Channel?.Guild;
-		this.MentionedUsersInternal ??= new();
-		this.MentionedRolesInternal ??= new();
-		this.MentionedChannelsInternal ??= new();
+		this.MentionedUsersInternal ??= [];
+		this.MentionedRolesInternal ??= [];
+		this.MentionedChannelsInternal ??= [];
 
 		var mentionedUsers = new HashSet<DiscordUser>(new DiscordUserComparer());
 		if (guild != null)
-		{
 			foreach (var usr in this.MentionedUsersInternal)
 			{
 				usr.Discord = this.Discord;
@@ -506,9 +571,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 
 				mentionedUsers.Add(guild.MembersInternal.TryGetValue(usr.Id, out var member) ? member : usr);
 			}
-		}
+
 		if (!string.IsNullOrWhiteSpace(this.Content))
-		{
 			//mentionedUsers.UnionWith(Utilities.GetUserMentions(this).Select(this.Discord.GetCachedOrEmptyUserInternal));
 			if (guild != null)
 			{
@@ -516,13 +580,10 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 				this.MentionedRolesInternal = this.MentionedRolesInternal.Union(this.MentionedRoleIds.Select(xid => guild.GetRole(xid))).ToList();
 				this.MentionedChannelsInternal = this.MentionedChannelsInternal.Union(Utilities.GetChannelMentions(this).Select(xid => guild.GetChannel(xid))).ToList();
 			}
-		}
 
-		this.MentionedUsersInternal = mentionedUsers.ToList();
+		this.MentionedUsersInternal = [.. mentionedUsers];
 	}
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message.
 	/// </summary>
@@ -532,11 +593,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> ModifyAsync(Optional<string> content)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, content, default, this.GetMentions(), default, default, Array.Empty<DiscordMessageFile>(), default);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message.
 	/// </summary>
@@ -546,11 +604,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> ModifyAsync(Optional<DiscordEmbed> embed = default)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, default, embed.Map(v => new[] { v }).ValueOr(Array.Empty<DiscordEmbed>()), this.GetMentions(), default, default, Array.Empty<DiscordMessageFile>(), default);
+		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, default, embed.Map(v => new[] { v }).ValueOr([]), this.GetMentions(), default, default, Array.Empty<DiscordMessageFile>(), default);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message.
 	/// </summary>
@@ -561,11 +616,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> ModifyAsync(Optional<string> content, Optional<DiscordEmbed> embed = default)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, content, embed.Map(v => new[] { v }).ValueOr(Array.Empty<DiscordEmbed>()), this.GetMentions(), default, default, Array.Empty<DiscordMessageFile>(), default);
+		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, content, embed.Map(v => new[] { v }).ValueOr([]), this.GetMentions(), default, default, Array.Empty<DiscordMessageFile>(), default);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message.
 	/// </summary>
@@ -576,11 +628,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> ModifyAsync(Optional<string> content, Optional<IEnumerable<DiscordEmbed>> embeds = default)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, content, embeds, this.GetMentions(), default, default, Array.Empty<DiscordMessageFile>(), default);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message.
 	/// </summary>
@@ -590,14 +639,15 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public async Task<DiscordMessage> ModifyAsync(DiscordMessageBuilder builder)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 	{
 		builder.Validate(true);
-		return await this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, builder.Content, Optional.Some(builder.Embeds.AsEnumerable()), builder.Mentions, builder.Components, builder.Suppressed, builder.Files, builder.Attachments.Count > 0 ? Optional.Some(builder.Attachments.AsEnumerable()) : builder.KeepAttachmentsInternal.HasValue ? builder.KeepAttachmentsInternal.Value && this.Attachments is not null ? Optional.Some(this.Attachments.AsEnumerable()) : Array.Empty<DiscordAttachment>() : Optional.None).ConfigureAwait(false);
+		return await this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, builder.Content, Optional.Some(builder.Embeds.AsEnumerable()), builder.Mentions, builder.Components, builder.Suppressed, builder.Files, builder.Attachments.Count > 0
+			? Optional.Some(builder.Attachments.AsEnumerable())
+			: builder.KeepAttachmentsInternal.HasValue
+				? builder.KeepAttachmentsInternal.Value && this.Attachments is not null ? Optional.Some(this.Attachments.AsEnumerable()) : Array.Empty<DiscordAttachment>()
+				: Optional.None).ConfigureAwait(false);
 	}
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message embed suppression.
 	/// </summary>
@@ -607,7 +657,6 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> ModifySuppressionAsync(bool suppress = false)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, default, default, default, default, suppress, default, default);
 
 	/// <summary>
@@ -617,8 +666,6 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	public Task<DiscordMessage> ClearAttachmentsAsync()
 		=> this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, default, default, this.GetMentions(), default, default, default, Array.Empty<DiscordAttachment>());
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Edits the message.
 	/// </summary>
@@ -628,16 +675,17 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public async Task<DiscordMessage> ModifyAsync(Action<DiscordMessageBuilder> action)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 	{
 		var builder = new DiscordMessageBuilder();
 		action(builder);
 		builder.Validate(true);
-		return await this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, builder.Content, Optional.Some(builder.Embeds.AsEnumerable()), builder.Mentions, builder.Components, builder.Suppressed, builder.Files, builder.Attachments.Count > 0 ? Optional.Some(builder.Attachments.AsEnumerable()) : builder.KeepAttachmentsInternal.HasValue ? builder.KeepAttachmentsInternal.Value && this.Attachments is not null ? Optional.Some(this.Attachments.AsEnumerable()) : Array.Empty<DiscordAttachment>() : Optional.None).ConfigureAwait(false);
+		return await this.Discord.ApiClient.EditMessageAsync(this.ChannelId, this.Id, builder.Content, Optional.Some(builder.Embeds.AsEnumerable()), builder.Mentions, builder.Components, builder.Suppressed, builder.Files, builder.Attachments.Count > 0
+			? Optional.Some(builder.Attachments.AsEnumerable())
+			: builder.KeepAttachmentsInternal.HasValue
+				? builder.KeepAttachmentsInternal.Value && this.Attachments is not null ? Optional.Some(this.Attachments.AsEnumerable()) : Array.Empty<DiscordAttachment>()
+				: Optional.None).ConfigureAwait(false);
 	}
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Deletes the message.
 	/// </summary>
@@ -646,11 +694,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task DeleteAsync(string reason = null)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.DeleteMessageAsync(this.ChannelId, this.Id, reason);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Creates a thread.
 	/// Depending on the <see cref="ChannelType"/> of the parent channel it's either a <see cref="ChannelType.PublicThread"/> or a <see cref="ChannelType.NewsThread"/>.
@@ -663,15 +708,9 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="NotFoundException">Thrown when the channel does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	/// <exception cref="NotSupportedException">Thrown when the <see cref="ThreadAutoArchiveDuration"/> cannot be modified.</exception>
-	public async Task<DiscordThreadChannel> CreateThreadAsync(string name, ThreadAutoArchiveDuration autoArchiveDuration = ThreadAutoArchiveDuration.OneHour, int? rateLimitPerUser = null, string reason = null) =>
-		Utilities.CheckThreadAutoArchiveDurationFeature(this.Channel.Guild, autoArchiveDuration)
-			? await this.Discord.ApiClient.CreateThreadAsync(this.ChannelId, this.Id, name, autoArchiveDuration, this.Channel.Type == ChannelType.News ? ChannelType.NewsThread : ChannelType.PublicThread, rateLimitPerUser, isForum: false, reason: reason).ConfigureAwait(false)
-			: throw new NotSupportedException($"Cannot modify ThreadAutoArchiveDuration. Guild needs boost tier {(autoArchiveDuration == ThreadAutoArchiveDuration.ThreeDays ? "one" : "two")}.");
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
+	public async Task<DiscordThreadChannel> CreateThreadAsync(string name, ThreadAutoArchiveDuration autoArchiveDuration = ThreadAutoArchiveDuration.OneHour, int? rateLimitPerUser = null, string? reason = null)
+		=> await this.Discord.ApiClient.CreateThreadAsync(this.ChannelId, this.Id, name, autoArchiveDuration, this.Channel.Type == ChannelType.News ? ChannelType.NewsThread : ChannelType.PublicThread, rateLimitPerUser, isForum: false, reason: reason).ConfigureAwait(false);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Pins the message in its channel.
 	/// </summary>
@@ -680,11 +719,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task PinAsync()
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.PinMessageAsync(this.ChannelId, this.Id);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Unpins the message in its channel.
 	/// </summary>
@@ -693,11 +729,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task UnpinAsync()
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.UnpinMessageAsync(this.ChannelId, this.Id);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Responds to the message. This produces a reply.
 	/// </summary>
@@ -708,11 +741,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> RespondAsync(string content)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, null, sticker: null, replyMessageId: this.Id, mentionReply: false, failOnInvalidReply: false);
+		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, null, null, this.Id, false, false);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Responds to the message. This produces a reply.
 	/// </summary>
@@ -723,11 +753,10 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> RespondAsync(DiscordEmbed embed)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, null, embed != null ? new[] { embed } : null, sticker: null, replyMessageId: this.Id, mentionReply: false, failOnInvalidReply: false);
+		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, null, embed != null
+			? new[] { embed }
+			: null, null, this.Id, false, false);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Responds to the message. This produces a reply.
 	/// </summary>
@@ -738,12 +767,12 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task<DiscordMessage> RespondAsync(string content, DiscordEmbed embed)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, embed != null ? new[] { embed } : null, sticker: null, replyMessageId: this.Id, mentionReply: false, failOnInvalidReply: false);
+	public
+		Task<DiscordMessage> RespondAsync(string content, DiscordEmbed embed)
+		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, content, embed != null
+			? new[] { embed }
+			: null, null, this.Id, false, false);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Responds to the message. This produces a reply.
 	/// </summary>
@@ -753,12 +782,10 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task<DiscordMessage> RespondAsync(DiscordMessageBuilder builder)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, builder.WithReply(this.Id, mention: false, failOnInvalidReply: false));
+	public
+		Task<DiscordMessage> RespondAsync(DiscordMessageBuilder builder)
+		=> this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, builder.WithReply(this.Id, false, false));
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Responds to the message. This produces a reply.
 	/// </summary>
@@ -769,15 +796,12 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordMessage> RespondAsync(Action<DiscordMessageBuilder> action)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 	{
 		var builder = new DiscordMessageBuilder();
 		action(builder);
-		return this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, builder.WithReply(this.Id, mention: false, failOnInvalidReply: false));
+		return this.Discord.ApiClient.CreateMessageAsync(this.ChannelId, builder.WithReply(this.Id, false, false));
 	}
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Creates a reaction to this message.
 	/// </summary>
@@ -787,11 +811,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task CreateReactionAsync(DiscordEmoji emoji)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.CreateReactionAsync(this.ChannelId, this.Id, emoji.ToReactionString());
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Deletes your own reaction
 	/// </summary>
@@ -800,11 +821,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task DeleteOwnReactionAsync(DiscordEmoji emoji)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.DeleteOwnReactionAsync(this.ChannelId, this.Id, emoji.ToReactionString());
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Deletes another user's reaction.
 	/// </summary>
@@ -816,11 +834,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task DeleteReactionAsync(DiscordEmoji emoji, DiscordUser user, string reason = null)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.DeleteUserReactionAsync(this.ChannelId, this.Id, user.Id, emoji.ToReactionString(), reason);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Gets users that reacted with this emoji.
 	/// </summary>
@@ -831,11 +846,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<IReadOnlyList<DiscordUser>> GetReactionsAsync(DiscordEmoji emoji, int limit = 25, ulong? after = null)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.GetReactionsInternalAsync(emoji, limit, after);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Deletes all reactions for this message.
 	/// </summary>
@@ -845,11 +857,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task DeleteAllReactionsAsync(string reason = null)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.DeleteAllReactionsAsync(this.ChannelId, this.Id, reason);
 
-
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 	/// <summary>
 	/// Deletes all reactions of a specific reaction for this message.
 	/// </summary>
@@ -859,7 +868,6 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task DeleteReactionsEmojiAsync(DiscordEmoji emoji)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 		=> this.Discord.ApiClient.DeleteReactionsEmojiAsync(this.ChannelId, this.Id, emoji.ToReactionString());
 
 	/// <summary>
@@ -891,7 +899,8 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 
 			users.AddRange(fetch);
 			last = fetch.LastOrDefault()?.Id;
-		} while (remaining > 0 && lastCount > 0);
+		}
+		while (remaining > 0 && lastCount > 0);
 
 		return new ReadOnlyCollection<DiscordUser>(users);
 	}
@@ -945,7 +954,7 @@ public class DiscordMessage : SnowflakeObject, IEquatable<DiscordMessage>
 		var o2 = e2 as object;
 
 		if (o1 is null && o2 is null)
-			return true;
+		       return true;
 
 		if (o1 is null || o2 is null)
 			return false;

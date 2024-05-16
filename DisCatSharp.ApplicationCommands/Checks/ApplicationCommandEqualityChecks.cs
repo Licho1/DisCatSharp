@@ -24,7 +24,9 @@ internal static class ApplicationCommandEqualityChecks
 	/// <param name="isGuild">Whether the equal check is performed for a guild command.</param>
 	internal static bool IsEqualTo(
 		this DiscordApplicationCommand? ac1,
-		DiscordApplicationCommand? targetApplicationCommand, DiscordClient client, bool isGuild
+		DiscordApplicationCommand? targetApplicationCommand,
+		DiscordClient client,
+		bool isGuild
 	)
 	{
 		if (targetApplicationCommand is null || ac1 is null)
@@ -53,14 +55,8 @@ internal static class ApplicationCommandEqualityChecks
 		}
 		else
 		{
-			sourceApplicationCommand.IntegrationTypes ??= new()
-			{
-				ApplicationCommandIntegrationTypes.InstalledToGuild
-			};
-			targetApplicationCommand.IntegrationTypes ??= new()
-			{
-				ApplicationCommandIntegrationTypes.InstalledToGuild
-			};
+			sourceApplicationCommand.IntegrationTypes ??= [ApplicationCommandIntegrationTypes.GuildInstall];
+			targetApplicationCommand.IntegrationTypes ??= [ApplicationCommandIntegrationTypes.GuildInstall];
 		}
 
 		client.Logger.Log(ApplicationCommandsExtension.ApplicationCommandsLogLevel,
@@ -83,8 +79,12 @@ internal static class ApplicationCommandEqualityChecks
 	/// <param name="localizationEnabled">Whether localization is enabled.</param>
 	/// <param name="guild">Whether the equal check is performed for a guild command.</param>
 	internal static bool SoftEqual(
-		this DiscordApplicationCommand source, DiscordApplicationCommand target,
-		ApplicationCommandType type, BaseDiscordClient client, bool localizationEnabled = false, bool guild = false
+		this DiscordApplicationCommand source,
+		DiscordApplicationCommand target,
+		ApplicationCommandType type,
+		BaseDiscordClient client,
+		bool localizationEnabled = false,
+		bool guild = false
 	)
 	{
 		bool? sDmPerm = source.DmPermission ?? true;
@@ -143,12 +143,9 @@ internal static class ApplicationCommandEqualityChecks
 	/// <param name="target">The target enumerable.</param>
 	/// <returns>Whether both nullable enumerable are equal.</returns>
 	internal static bool NullableSequenceEqual<T>(this List<T>? source, List<T>? target)
-	{
-		if (source is not null && target is not null)
-			return source.All(target.Contains) && source.Count == target.Count;
-
-		return source is null && target is null;
-	}
+		=> source is not null && target is not null
+			? source.All(target.Contains) && source.Count == target.Count
+			: source is null && target is null;
 
 	/// <summary>
 	/// Checks whether two dictionaries are equal.
@@ -163,6 +160,9 @@ internal static class ApplicationCommandEqualityChecks
 
 		if (sourceDictionary is null && targetDictionary is null)
 			return true;
+
+		if (sourceDictionary is null || targetDictionary is null)
+			return false;
 
 		foreach (var kvp in sourceDictionary)
 			if (!targetDictionary.TryGetValue(kvp.Key, out var value) || value != kvp.Value)
@@ -182,8 +182,12 @@ internal static class ApplicationCommandEqualityChecks
 	/// <param name="sDmPerm">The source dm permission.</param>
 	/// <param name="tDmPerm">The target dm permission.</param>
 	internal static bool DeepEqual(
-		DiscordApplicationCommand source, DiscordApplicationCommand target, BaseDiscordClient client,
-		bool localizationEnabled = false, bool? sDmPerm = null, bool? tDmPerm = null
+		DiscordApplicationCommand source,
+		DiscordApplicationCommand target,
+		BaseDiscordClient client,
+		bool localizationEnabled = false,
+		bool? sDmPerm = null,
+		bool? tDmPerm = null
 	)
 	{
 		var name = source.Name;
@@ -201,13 +205,13 @@ internal static class ApplicationCommandEqualityChecks
 			            source.RawNameLocalizations.AreDictionariesEqual(target.RawNameLocalizations) &&
 			            source.RawDescriptionLocalizations.AreDictionariesEqual(target.RawDescriptionLocalizations);
 
-		var optionsEqual = DeepEqualOptions(source.Options, target.Options, localizationEnabled);
-		if (optionsEqual.Reason is not null)
-			client.Logger.Log(ApplicationCommandsExtension.ApplicationCommandsLogLevel, "Inequality found in options of {name} - {reason}", name, optionsEqual.Reason);
+		var (equal, reason) = DeepEqualOptions(source.Options, target.Options, localizationEnabled);
+		if (reason is not null)
+			client.Logger.Log(ApplicationCommandsExtension.ApplicationCommandsLogLevel, "Inequality found in options of {name} - {reason}", name, reason);
 		if (!rootCheck)
 			client.Logger.Log(ApplicationCommandsExtension.ApplicationCommandsLogLevel, "Inequality found in root of {name}", name);
 
-		return rootCheck && optionsEqual.Equal;
+		return rootCheck && equal;
 	}
 
 	/// <summary>
@@ -218,7 +222,8 @@ internal static class ApplicationCommandEqualityChecks
 	/// <param name="localizationEnabled">Whether localization is enabled.</param>
 	private static (bool Equal, string? Reason) DeepEqualOptions(
 		IReadOnlyList<DiscordApplicationCommandOption>? sourceOptions,
-		IReadOnlyList<DiscordApplicationCommandOption>? targetOptions, bool localizationEnabled
+		IReadOnlyList<DiscordApplicationCommandOption>? targetOptions,
+		bool localizationEnabled
 	)
 	{
 		if (sourceOptions == null && targetOptions == null)
@@ -269,9 +274,9 @@ internal static class ApplicationCommandEqualityChecks
 			     !sourceOption.ChannelTypes.OrderBy(x => x).All(targetOption.ChannelTypes.OrderBy(x => x).Contains)))
 				return (false, "channel type mismatch - " + sourceOption.Name);
 
-			var rec = DeepEqualOptions(sourceOption.Options, targetOption.Options, localizationEnabled);
-			if (!rec.Equal)
-				return (false, "Options Recursive - " + sourceOption.Name + " -- " + rec.Reason);
+			var (equal, reason) = DeepEqualOptions(sourceOption.Options, targetOption.Options, localizationEnabled);
+			if (!equal)
+				return (false, "Options Recursive - " + sourceOption.Name + " -- " + reason);
 
 			if (!optionCheck)
 				return (false, "OptionCheck - " + sourceOption.Name);

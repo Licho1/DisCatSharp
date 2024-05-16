@@ -27,7 +27,7 @@ public sealed class DiscordInteraction : SnowflakeObject
 	public DiscordInteractionData Data { get; internal set; }
 
 	/// <summary>
-	/// Gets the Id of the guild that invoked this interaction.
+	/// Gets the Id of the guild that invoked this interaction, if any.
 	/// </summary>
 	[JsonIgnore]
 	public ulong? GuildId { get; internal set; }
@@ -50,7 +50,18 @@ public sealed class DiscordInteraction : SnowflakeObject
 	/// </summary>
 	[JsonIgnore] // TODO: Is now also partial "channel"
 	public DiscordChannel Channel
-		 => (this.Discord as DiscordClient).InternalGetCachedChannel(this.ChannelId) ?? (DiscordChannel)(this.Discord as DiscordClient).InternalGetCachedThread(this.ChannelId) ?? (this.Guild == null ? new DiscordDmChannel { Id = this.ChannelId, Type = ChannelType.Private, Discord = this.Discord } : new DiscordChannel() { Id = this.ChannelId, Discord = this.Discord });
+		=> (this.Discord as DiscordClient).InternalGetCachedChannel(this.ChannelId) ?? (DiscordChannel)(this.Discord as DiscordClient).InternalGetCachedThread(this.ChannelId) ?? (this.Guild == null
+			? new DiscordDmChannel
+			{
+				Id = this.ChannelId,
+				Type = ChannelType.Private,
+				Discord = this.Discord
+			}
+			: new DiscordChannel()
+			{
+				Id = this.ChannelId,
+				Discord = this.Discord
+			});
 
 	/// <summary>
 	/// Gets the user that invoked this interaction.
@@ -107,7 +118,7 @@ public sealed class DiscordInteraction : SnowflakeObject
 	/// <para><note type="warning">Can only be used if you have an associated application subscription sku.</note></para>
 	/// </summary>
 	[JsonProperty("entitlements", NullValueHandling = NullValueHandling.Ignore), DiscordInExperiment("Currently in closed beta."), Experimental("We provide this type but can't provide support.")]
-	public List<DiscordEntitlement> Entitlements { get; internal set; } = new();
+	public List<DiscordEntitlement> Entitlements { get; internal set; } = [];
 
 	/// <summary>
 	/// <para>Gets the entitlement sku ids.</para>
@@ -115,7 +126,19 @@ public sealed class DiscordInteraction : SnowflakeObject
 	/// <para><note type="warning">Can only be used if you have an associated application subscription sku.</note></para>
 	/// </summary>
 	[JsonProperty("entitlement_sku_ids", NullValueHandling = NullValueHandling.Ignore), DiscordInExperiment("Currently in closed beta."), Experimental("We provide this type but can't provide support.")]
-	public List<ulong> EntitlementSkuIds { get; internal set; } = new();
+	public List<ulong> EntitlementSkuIds { get; internal set; } = [];
+
+	/// <summary>
+	/// Gets which integrations authorized the interaction.
+	/// </summary>
+	[JsonProperty("authorizing_integration_owners", NullValueHandling = NullValueHandling.Ignore)]
+	public AuthorizingIntegrationOwners? AuthorizingIntegrationOwners { get; internal set; }
+
+	/// <summary>
+	/// Gets the interaction's calling context.
+	/// </summary>
+	[JsonProperty("context", NullValueHandling = NullValueHandling.Ignore)]
+	public InteractionContextType Context { get; internal set; }
 
 	/// <summary>
 	/// Creates a response to this interaction.
@@ -132,6 +155,7 @@ public sealed class DiscordInteraction : SnowflakeObject
 	public Task CreateInteractionModalResponseAsync(DiscordInteractionModalBuilder builder)
 		=> this.Type != InteractionType.Ping && this.Type != InteractionType.ModalSubmit ? this.Discord.ApiClient.CreateInteractionModalResponseAsync(this.Id, this.Token, InteractionResponseType.Modal, builder) : throw new NotSupportedException("You can't respond to a PING with a modal.");
 
+	// TODO: Add hints support
 	/// <summary>
 	/// Creates an iframe response to this interaction.
 	/// </summary>
@@ -161,14 +185,10 @@ public sealed class DiscordInteraction : SnowflakeObject
 		{
 			var attachments = this.Discord.ApiClient.GetOriginalInteractionResponseAsync(this.Discord.CurrentApplication.Id, this.Token).Result.Attachments;
 			if (attachments?.Count > 0)
-			{
 				builder.AttachmentsInternal.AddRange(attachments);
-			}
 		}
 		else if (builder.KeepAttachmentsInternal.HasValue)
-		{
 			builder.AttachmentsInternal.Clear();
-		}
 
 		return await this.Discord.ApiClient.EditOriginalInteractionResponseAsync(this.Discord.CurrentApplication.Id, this.Token, builder).ConfigureAwait(false);
 	}
@@ -212,14 +232,10 @@ public sealed class DiscordInteraction : SnowflakeObject
 		{
 			var attachments = this.Discord.ApiClient.GetFollowupMessageAsync(this.Discord.CurrentApplication.Id, this.Token, messageId).Result.Attachments;
 			if (attachments?.Count > 0)
-			{
 				builder.AttachmentsInternal.AddRange(attachments);
-			}
 		}
 		else if (builder.KeepAttachmentsInternal.HasValue)
-		{
 			builder.AttachmentsInternal.Clear();
-		}
 
 		return await this.Discord.ApiClient.EditFollowupMessageAsync(this.Discord.CurrentApplication.Id, this.Token, messageId, builder).ConfigureAwait(false);
 	}
@@ -232,6 +248,6 @@ public sealed class DiscordInteraction : SnowflakeObject
 		=> this.Discord.ApiClient.DeleteFollowupMessageAsync(this.Discord.CurrentApplication.Id, this.Token, messageId);
 
 	internal DiscordInteraction()
-		: base(new() { "member", "guild_id", "channel_id", "channel", "guild" })
+		: base(["member", "guild_id", "channel_id", "channel", "guild", "user"])
 	{ }
 }

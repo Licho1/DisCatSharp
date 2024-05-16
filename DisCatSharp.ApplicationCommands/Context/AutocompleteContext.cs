@@ -12,7 +12,7 @@ namespace DisCatSharp.ApplicationCommands.Context;
 /// <summary>
 /// Represents a context for an autocomplete interaction.
 /// </summary>
-public class AutocompleteContext
+public sealed class AutocompleteContext
 {
 	/// <summary>
 	/// The interaction created.
@@ -22,12 +22,12 @@ public class AutocompleteContext
 	/// <summary>
 	/// Gets the client for this interaction.
 	/// </summary>
-	public DiscordClient Client { get; internal set; }
+	public DiscordClient Client { get; internal init; }
 
 	/// <summary>
 	/// Gets the guild this interaction was executed in.
 	/// </summary>
-	public DiscordGuild Guild { get; internal set; }
+	public DiscordGuild Guild { get; internal init; }
 
 	/// <summary>
 	/// Gets the channel this interaction was executed in.
@@ -37,7 +37,7 @@ public class AutocompleteContext
 	/// <summary>
 	/// Gets the user which executed this interaction.
 	/// </summary>
-	public DiscordUser User { get; internal set; }
+	public DiscordUser User { get; internal init; }
 
 	/// <summary>
 	/// Gets the member which executed this interaction, or null if the command is in a DM.
@@ -66,7 +66,7 @@ public class AutocompleteContext
 	/// <para><note type="warning">Can only be used if you have an associated application subscription sku.</note></para>
 	/// </summary>
 	[DiscordInExperiment("Currently in closed beta."), Experimental("We provide this type but can't provide support.")]
-	public List<DiscordEntitlement> Entitlements { get; internal set; } = new();
+	public List<DiscordEntitlement> Entitlements { get; internal set; } = [];
 
 	/// <summary>
 	/// <para>Gets the entitlement sku ids.</para>
@@ -74,7 +74,7 @@ public class AutocompleteContext
 	/// <para><note type="warning">Can only be used if you have an associated application subscription sku.</note></para>
 	/// </summary>
 	[DiscordInExperiment("Currently in closed beta."), Experimental("We provide this type but can't provide support.")]
-	public List<ulong> EntitlementSkuIds { get; internal set; } = new();
+	public List<ulong> EntitlementSkuIds { get; internal set; } = [];
 
 	/// <summary>
 	/// Gets the slash command module this interaction was created in.
@@ -91,7 +91,7 @@ public class AutocompleteContext
 	/// <summary>
 	/// The options already provided.
 	/// </summary>
-	public IReadOnlyList<DiscordInteractionDataOption> Options { get; internal set; }
+	public IReadOnlyList<DiscordInteractionDataOption> Options { get; internal init; }
 
 	/// <summary>
 	/// The option to autocomplete.

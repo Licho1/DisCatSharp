@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 
@@ -22,13 +21,12 @@ public sealed class LavalinkInfo
 	/// </summary>
 	[JsonIgnore]
 	public DateTimeOffset BuildTime => Utilities.GetDateTimeOffsetFromMilliseconds(this._buildTime);
+
 	/// <summary>
 	/// Gets the timestamp when this version was built.
 	/// </summary>
 	[JsonProperty("commitTime")]
-#pragma warning disable CS0649 // Field 'LavalinkInfo._buildTime' is never assigned to, and will always have its default value 0
 	private readonly long _buildTime;
-#pragma warning restore CS0649 // Field 'LavalinkInfo._buildTime' is never assigned to, and will always have its default value 0
 
 	/// <summary>
 	/// Gets the git information.
@@ -52,19 +50,19 @@ public sealed class LavalinkInfo
 	/// Gets a <see cref="List{T}"/> of available source managers.
 	/// </summary>
 	[JsonProperty("sourceManagers")]
-	public List<string> SourceManagers { get; internal set; } = new();
+	public List<string> SourceManagers { get; internal set; } = [];
 
 	/// <summary>
 	/// Gets a <see cref="List{T}"/> of available folters.
 	/// </summary>
 	[JsonProperty("filters")]
-	public List<string> Filters { get; internal set; } = new();
+	public List<string> Filters { get; internal set; } = [];
 
 	/// <summary>
 	/// Gets a <see cref="List{T}"/> of available plugins.
 	/// </summary>
 	[JsonProperty("plugins")]
-	public List<Plugin> Plugins { get; internal set; } = new();
+	public List<Plugin> Plugins { get; internal set; } = [];
 }
 
 /// <summary>
@@ -94,9 +92,7 @@ public sealed class Git
 	/// Gets the millisecond unix timestamp for when the commit was created.
 	/// </summary>
 	[JsonProperty("commitTime")]
-#pragma warning disable CS0649 // Field 'Git._commitTime' is never assigned to, and will always have its default value 0
 	private readonly long _commitTime;
-#pragma warning restore CS0649 // Field 'Git._commitTime' is never assigned to, and will always have its default value 0
 }
 
 /// <summary>
@@ -158,4 +154,3 @@ public sealed class Version
 	[JsonProperty("build")]
 	public string? Build { get; internal set; }
 }
-

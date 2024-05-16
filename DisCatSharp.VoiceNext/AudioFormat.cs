@@ -137,5 +137,5 @@ public readonly struct AudioFormat
 	/// <returns>A bool.</returns>
 	internal bool IsValid()
 		=> AllowedSampleRates.Contains(this.SampleRate) && AllowedChannelCounts.Contains(this.ChannelCount) &&
-			(this.VoiceApplication == VoiceApplication.Music || this.VoiceApplication == VoiceApplication.Voice || this.VoiceApplication == VoiceApplication.LowLatency);
+		   (this.VoiceApplication == VoiceApplication.Music || this.VoiceApplication == VoiceApplication.Voice || this.VoiceApplication == VoiceApplication.LowLatency);
 }

@@ -100,6 +100,12 @@ internal sealed class RestChannelCreatePayload : ObservableApiObject
 	public Optional<ForumPostSortOrder> DefaultSortOrder { get; internal set; }
 
 	/// <summary>
+	/// Gets the default forum layout for this channel
+	/// </summary>
+	[JsonProperty("default_forum_layout", NullValueHandling = NullValueHandling.Ignore)]
+	public Optional<ForumLayout?> DefaultForumLayout { get; internal set; }
+
+	/// <summary>
 	/// Gets or sets the channel flags.
 	/// </summary>
 	[JsonProperty("flags", NullValueHandling = NullValueHandling.Include)]
@@ -211,6 +217,12 @@ internal sealed class RestChannelModifyPayload : ObservableApiObject
 	public Optional<ForumPostSortOrder?> DefaultSortOrder { get; internal set; }
 
 	/// <summary>
+	/// Gets the default forum layout for this channel
+	/// </summary>
+	[JsonProperty("default_forum_layout", NullValueHandling = NullValueHandling.Ignore)]
+	public Optional<ForumLayout?> ForumLayout { get; internal set; }
+
+	/// <summary>
 	/// Gets or sets the channel flags.
 	/// </summary>
 	[JsonProperty("flags", NullValueHandling = NullValueHandling.Include)]
@@ -312,6 +324,23 @@ internal sealed class RestChannelMessageCreatePayload : RestChannelMessageEditPa
 	[JsonProperty("message_reference", NullValueHandling = NullValueHandling.Ignore)]
 	public InternalDiscordMessageReference? MessageReference { get; set; }
 
+	/// <summary>
+	/// Gets or sets the nonce sent with the message.
+	/// </summary>
+	[JsonProperty("nonce", NullValueHandling = NullValueHandling.Ignore)]
+	public string Nonce { get; internal set; }
+
+	/// <summary>
+	/// Gets or sets whether to enforce the <see cref="Nonce"/> to be validated.
+	/// </summary>
+	[JsonProperty("enforce_nonce", NullValueHandling = NullValueHandling.Ignore)]
+	public bool EnforceNonce { get; internal set; }
+
+	/// <summary>
+	/// Gets or sets the poll request.
+	/// </summary>
+	[JsonProperty("poll", NullValueHandling = NullValueHandling.Ignore)]
+	public DiscordPollRequest? DiscordPollRequest { get; internal set; }
 }
 
 /// <summary>

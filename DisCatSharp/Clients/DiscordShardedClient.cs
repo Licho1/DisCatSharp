@@ -1,4 +1,3 @@
-#pragma warning disable CS0618
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -133,22 +133,25 @@ public sealed partial class DiscordShardedClient
 		{
 			var configureNamedOptions = new ConfigureNamedOptions<ConsoleLoggerOptions>(string.Empty, x =>
 			{
-				x.Format = ConsoleLoggerFormat.Default;
+#pragma warning disable CS0618 // Type or member is obsolete
 				x.TimestampFormat = this._configuration.LogTimestampFormat;
+#pragma warning restore CS0618 // Type or member is obsolete
 				x.LogToStandardErrorThreshold = this._configuration.MinimumLogLevel;
 			});
-			var optionsFactory = new OptionsFactory<ConsoleLoggerOptions>(new[]
-			{
-				configureNamedOptions
-			}, Enumerable.Empty<IPostConfigureOptions<ConsoleLoggerOptions>>());
+			var optionsFactory = new OptionsFactory<ConsoleLoggerOptions>(new[] { configureNamedOptions }, Enumerable.Empty<IPostConfigureOptions<ConsoleLoggerOptions>>());
 			var optionsMonitor = new OptionsMonitor<ConsoleLoggerOptions>(optionsFactory, Enumerable.Empty<IOptionsChangeTokenSource<ConsoleLoggerOptions>>(), new OptionsCache<ConsoleLoggerOptions>());
+			/*
+			var configureFormatterOptions = new ConfigureNamedOptions<ConsoleFormatterOptions>(string.Empty, x => { x.TimestampFormat = this.Configuration.LogTimestampFormat; });
+			var formatterFactory = new OptionsFactory<ConsoleFormatterOptions>(new[] { configureFormatterOptions }, Enumerable.Empty<IPostConfigureOptions<ConsoleFormatterOptions>>());
+			var formatterMonitor = new OptionsMonitor<ConsoleFormatterOptions>(formatterFactory, Enumerable.Empty<IOptionsChangeTokenSource<ConsoleFormatterOptions>>(), new OptionsCache<ConsoleFormatterOptions>());
+			*/
 
 			var l = new ConsoleLoggerProvider(optionsMonitor);
 			this._configuration.LoggerFactory = new LoggerFactory();
 			this._configuration.LoggerFactory.AddProvider(l);
 		}
 
-		if (this._configuration.LoggerFactory != null && this._configuration.EnableSentry)
+		if (this._configuration is { LoggerFactory: not null, EnableSentry: true })
 			this._configuration.LoggerFactory.AddSentry(o =>
 			{
 				var a = typeof(DiscordClient).GetTypeInfo().Assembly;
@@ -181,7 +184,7 @@ public sealed partial class DiscordShardedClient
 				o.UseAsyncFileIO = true;
 				o.Debug = this._configuration.SentryDebug;
 				o.EnableScopeSync = true;
-				o.BeforeSend = e =>
+				o.SetBeforeSend((e, _) =>
 				{
 					if (!this._configuration.DisableExceptionFilter)
 					{
@@ -202,19 +205,15 @@ public sealed partial class DiscordShardedClient
 								Username = this.CurrentUser.UsernameWithDiscriminator,
 								Other = new Dictionary<string, string>()
 								{
-									{
-										"developer", this._configuration.DeveloperUserId?.ToString() ?? "not_given"
-									},
-									{
-										"email", this._configuration.FeedbackEmail ?? "not_given"
-									}
+									{ "developer", this._configuration.DeveloperUserId?.ToString() ?? "not_given" },
+									{ "email", this._configuration.FeedbackEmail ?? "not_given" }
 								}
 							};
 
 					if (!e.Extra.ContainsKey("Found Fields"))
 						e.SetFingerprint(BaseDiscordClient.GenerateSentryFingerPrint(e));
 					return e;
-				};
+				});
 			});
 
 		this._configuration.HasShardLogger = true;
@@ -241,12 +240,12 @@ public sealed partial class DiscordShardedClient
 		try
 		{
 			if (this._configuration.TokenType != TokenType.Bot)
-				this.Logger.LogWarning(LoggerEvents.Misc, "You are logging in with a token that is not a bot token. This is not officially supported by Discord, and can result in your account being terminated if you aren't careful.");
-			this.Logger.LogInformation(LoggerEvents.Startup, "Lib {0}, version {1}", this._botLibrary, this._versionString.Value);
+				this.Logger.LogWarning(LoggerEvents.Misc, "You are logging in with a token that is not a bot token. This is not officially supported by Discord, and can result in your account being terminated if you aren't careful");
+			this.Logger.LogInformation(LoggerEvents.Startup, "Lib {LibraryName}, version {LibraryVersion}", this._botLibrary, this._versionString.Value);
 
 			var shardc = await this.InitializeShardsAsync().ConfigureAwait(false);
 			var connectTasks = new List<Task>();
-			this.Logger.LogInformation(LoggerEvents.ShardStartup, "Booting {0} shards.", shardc);
+			this.Logger.LogInformation(LoggerEvents.ShardStartup, "Booting {NumShards} shards", shardc);
 
 			for (var i = 0; i < shardc; i++)
 			{
@@ -275,7 +274,7 @@ public sealed partial class DiscordShardedClient
 
 			var message = $"Shard initialization failed, check inner exceptions for details: ";
 
-			this.Logger.LogCritical(LoggerEvents.ShardClientError, $"{message}\n{ex}");
+			this.Logger.LogCritical(LoggerEvents.ShardClientError, "{Message}\n{Ex}", message, ex);
 			throw new AggregateException(message, ex);
 		}
 	}
@@ -331,13 +330,6 @@ public sealed partial class DiscordShardedClient
 		await Task.WhenAll(tasks).ConfigureAwait(false);
 	}
 
-	/// <summary>
-	/// <see cref="BaseDiscordClient.GetLibraryDevelopmentTeamAsync"/>
-	/// </summary>
-	[Obsolete("Don't use this right now, inactive")]
-	public async Task<DisCatSharpTeam> GetLibraryDevelopmentTeamAsync()
-		=> await this.GetShard(0).GetLibraryDevelopmentTeamAsync().ConfigureAwait(false);
-
 #endregion
 
 #region Internal Methods
@@ -358,7 +350,9 @@ public sealed partial class DiscordShardedClient
 		{
 			var cfg = new DiscordConfiguration(this._configuration)
 			{
-				ShardId = i, ShardCount = shardCount, LoggerFactory = lf
+				ShardId = i,
+				ShardCount = shardCount,
+				LoggerFactory = lf
 			};
 
 			var client = new DiscordClient(cfg);
@@ -378,8 +372,19 @@ public sealed partial class DiscordShardedClient
 	/// </summary>
 	private async Task<GatewayInfo> GetGatewayInfoAsync()
 	{
+		var httphandler = new HttpClientHandler
+		{
+			UseCookies = false,
+			AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
+			UseProxy = this._configuration.Proxy != null,
+			Proxy = this._configuration.Proxy
+		};
 		var url = $"{Utilities.GetApiBaseUri(this._configuration)}{Endpoints.GATEWAY}{Endpoints.BOT}";
-		var http = new HttpClient();
+		var http = new HttpClient(httphandler)
+		{
+			BaseAddress = new(Utilities.GetApiBaseUri(this._configuration)),
+			Timeout = this._configuration.HttpTimeout
+		};
 
 		http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", Utilities.GetUserAgent());
 		http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", Utilities.GetFormattedToken(this._configuration));
@@ -651,6 +656,8 @@ public sealed partial class DiscordShardedClient
 		this._entitlementCreated = new("ENTITLEMENT_CREATED", DiscordClient.EventExecutionLimit, this.EventErrorHandler);
 		this._entitlementUpdated = new("ENTITLEMENT_UPDATED", DiscordClient.EventExecutionLimit, this.EventErrorHandler);
 		this._entitlementDeleted = new("ENTITLEMENT_DELETED", DiscordClient.EventExecutionLimit, this.EventErrorHandler);
+		this._messagePollVoteAdded = new("MESSAGE_POLL_VOTE_ADDED", DiscordClient.EventExecutionLimit, this.EventErrorHandler);
+		this._messagePollVoteRemoved = new("MESSAGE_POLL_VOTE_REMOVED", DiscordClient.EventExecutionLimit, this.EventErrorHandler);
 	}
 
 	/// <summary>
@@ -747,6 +754,8 @@ public sealed partial class DiscordShardedClient
 		client.EntitlementCreated += this.Client_EntitlementCreated;
 		client.EntitlementUpdated += this.Client_EntitlementUpdated;
 		client.EntitlementDeleted += this.Client_EntitlementDeleted;
+		client.MessagePollVoteAdded += this.Client_MessagePollVoteAdded;
+		client.MessagePollVoteRemoved += this.Client_MessagePollVoteRemoved;
 	}
 
 	/// <summary>
@@ -843,6 +852,8 @@ public sealed partial class DiscordShardedClient
 		client.EntitlementCreated -= this.Client_EntitlementCreated;
 		client.EntitlementUpdated -= this.Client_EntitlementUpdated;
 		client.EntitlementDeleted -= this.Client_EntitlementDeleted;
+		client.MessagePollVoteAdded -= this.Client_MessagePollVoteAdded;
+		client.MessagePollVoteRemoved -= this.Client_MessagePollVoteRemoved;
 	}
 
 	/// <summary>

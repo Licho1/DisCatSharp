@@ -210,6 +210,11 @@ public static class Endpoints
 	public const string BANS = "/bans";
 
 	/// <summary>
+	/// The bulk ban endpoint.
+	/// </summary>
+	public const string BULK_BAN = "/bulk-ban";
+
+	/// <summary>
 	/// The webhook endpoint.
 	/// </summary>
 	public const string WEBHOOKS = "/webhooks";
@@ -556,4 +561,9 @@ public static class Endpoints
 	public const string CLYDE_SETTINGS = "/clyde-settings";
 	public const string CLYDE_PROFILES = "/clyde-profiles";
 	public const string GENERATE_PERSONALITY = "/generate-personality";
+	public const string REFRESH_URLS = "/refresh-urls";
+	public const string POLLS = "/polls";
+	public const string ANSWERS = "/answers";
+	public const string EXPIRE = "/expire";
+	public const string CLAN_BADGES = "/clan-badges";
 }

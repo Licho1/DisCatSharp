@@ -24,11 +24,9 @@ public static class StreamExtensions
 		// adapted from CoreFX
 		// https://source.dot.net/#System.Private.CoreLib/Stream.cs,8048a9680abdd13b
 
-		if (source is null)
-			throw new ArgumentNullException(nameof(source));
-		if (destination is null)
-			throw new ArgumentNullException(nameof(destination));
-		if (bufferSize != null && bufferSize <= 0)
+		ArgumentNullException.ThrowIfNull(source);
+		ArgumentNullException.ThrowIfNull(destination);
+		if (bufferSize is <= 0)
 			throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, "bufferSize cannot be less than or equal to zero");
 
 		var bufferLength = bufferSize ?? destination.SampleLength;
@@ -36,10 +34,8 @@ public static class StreamExtensions
 		try
 		{
 			int bytesRead;
-			while ((bytesRead = await source.ReadAsync(buffer.AsMemory(0, bufferLength), cancellationToken).ConfigureAwait(false)) != 0)
-			{
-				await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
-			}
+			while ((bytesRead = await source.ReadAsync(buffer.AsMemory(0, bufferLength), cancellationToken).ConfigureAwait(false)) is not 0)
+				await destination.WriteAsync(new(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
 		}
 		finally
 		{

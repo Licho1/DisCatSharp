@@ -39,7 +39,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 
 		this.Id = user.Id;
 
-		this.RoleIdsInternal = new();
+		this.RoleIdsInternal = [];
 		this._roleIdsLazy = new(() => new ReadOnlyCollection<ulong>(this.RoleIdsInternal));
 	}
 
@@ -63,37 +63,44 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 		this.CommunicationDisabledUntil = mbr.CommunicationDisabledUntil;
 		this.UnusualDmActivityUntil = mbr.UnusualDmActivityUntil;
 		this.AvatarHashInternal = mbr.AvatarHash;
-		this.RoleIdsInternal = mbr.Roles ?? new List<ulong>();
+		this.RoleIdsInternal = mbr.Roles ?? [];
 		this._roleIdsLazy = new(() => new ReadOnlyCollection<ulong>(this.RoleIdsInternal));
 		this.MemberFlags = mbr.MemberFlags;
 		this.InteractionPermissions = mbr.Permissions;
+		this.GuildAvatarDecorationData = mbr.GuildAvatarDecorationData;
 	}
 
 	/// <summary>
 	/// Gets the members avatar hash.
 	/// </summary>
 	[JsonProperty("avatar", NullValueHandling = NullValueHandling.Ignore)]
-	public string GuildAvatarHash { get; internal set; }
+	public string? GuildAvatarHash { get; internal set; }
 
 	/// <summary>
 	/// Gets the members avatar URL.
 	/// </summary>
 	[JsonIgnore]
 	public string GuildAvatarUrl
-		=> string.IsNullOrWhiteSpace(this.GuildAvatarHash) ? this.User.AvatarUrl : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.GuildId.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.AVATARS}/{this.GuildAvatarHash}.{(this.GuildAvatarHash.StartsWith("a_") ? "gif" : "png")}?size=1024";
+		=> string.IsNullOrWhiteSpace(this.GuildAvatarHash) ? this.User.AvatarUrl : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.GuildId.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.AVATARS}/{this.GuildAvatarHash}.{(this.GuildAvatarHash.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
 
 	/// <summary>
 	/// Gets the members banner hash.
 	/// </summary>
 	[JsonProperty("banner", NullValueHandling = NullValueHandling.Ignore)]
-	public string GuildBannerHash { get; internal set; }
+	public string? GuildBannerHash { get; internal set; }
 
 	/// <summary>
 	/// Gets the members banner URL.
 	/// </summary>
 	[JsonIgnore]
-	public string GuildBannerUrl
-		=> string.IsNullOrWhiteSpace(this.GuildBannerHash) ? this.User.BannerUrl : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.GuildId.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.BANNERS}/{this.GuildBannerHash}.{(this.GuildBannerHash.StartsWith("a_") ? "gif" : "png")}?size=1024";
+	public string? GuildBannerUrl
+		=> string.IsNullOrWhiteSpace(this.GuildBannerHash) ? this.User.BannerUrl : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.GuildId.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.BANNERS}/{this.GuildBannerHash}.{(this.GuildBannerHash.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
+
+	/// <summary>
+	/// Gets the members guild avatar decoration data.
+	/// </summary>
+	[JsonProperty("avatar_decoration_data", NullValueHandling = NullValueHandling.Ignore)]
+	public AvatarDecorationData GuildAvatarDecorationData { get; internal set; }
 
 	/// <summary>
 	/// The color of this member's banner. Mutually exclusive with <see cref="GuildBannerHash"/>.
@@ -106,20 +113,20 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// Gets this member's nickname.
 	/// </summary>
 	[JsonProperty("nick", NullValueHandling = NullValueHandling.Ignore)]
-	public string Nickname { get; internal set; }
+	public string? Nickname { get; internal set; }
 
 	/// <summary>
 	/// Gets the members guild bio.
 	/// This is not available to bots tho.
 	/// </summary>
 	[JsonProperty("bio", NullValueHandling = NullValueHandling.Ignore)]
-	public string GuildBio { get; internal set; }
+	public string? GuildBio { get; internal set; }
 
 	/// <summary>
 	/// Gets the members's pronouns.
 	/// </summary>
 	[JsonProperty("pronouns", NullValueHandling = NullValueHandling.Ignore)]
-	public string GuildPronouns { get; internal set; }
+	public string? GuildPronouns { get; internal set; }
 
 	/// <summary>
 	/// Gets the members flags.
@@ -127,45 +134,51 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	[JsonProperty("flags", NullValueHandling = NullValueHandling.Ignore)]
 	public MemberFlags MemberFlags { get; internal set; }
 
+	/// <summary>
+	/// Gets the avatar hash.
+	/// </summary>
 	[JsonIgnore]
-	internal string AvatarHashInternal;
+	internal string? AvatarHashInternal;
 
 	/// <summary>
 	/// Gets this member's display name.
 	/// </summary>
 	[JsonIgnore]
 	public string DisplayName
-		=> this.Nickname ?? (this.IsMigrated ? (this.GlobalName ?? this.Username) : this.Username);
+		=> this.Nickname ?? (this.IsMigrated ? this.GlobalName ?? this.Username : this.Username);
 
 	/// <summary>
 	/// List of role ids
 	/// </summary>
 	[JsonIgnore]
-	internal IReadOnlyList<ulong> RoleIds
+	public IReadOnlyList<ulong> RoleIds
 		=> this._roleIdsLazy.Value;
 
 	[JsonProperty("roles", NullValueHandling = NullValueHandling.Ignore)]
 	internal List<ulong> RoleIdsInternal;
+
 	[JsonIgnore]
 	private readonly Lazy<IReadOnlyList<ulong>> _roleIdsLazy;
 
 	/// <summary>
 	/// Gets the list of roles associated with this member.
+ 	/// <note type="warning">This will throw if accessed for an oauth2 constructed member.</note>
 	/// </summary>
 	[JsonIgnore]
 	public IReadOnlyList<DiscordRole> Roles
-		=> this.RoleIds.Select(id => this.Guild.GetRole(id)).Where(x => x != null).ToList();
+		=> this.RoleIds.Select(id => this.Guild.GetRole(id)).Where(x => x is not null).ToList();
 
 	/// <summary>
 	/// Gets the color associated with this user's top color-giving role, otherwise 0 (no color).
+ 	/// <note type="warning">This will throw if accessed for an oauth2 constructed member.</note>
 	/// </summary>
 	[JsonIgnore]
 	public DiscordColor Color
 	{
 		get
 		{
-			var role = this.Roles.OrderByDescending(xr => xr.Position).FirstOrDefault(xr => xr.Color.Value != 0);
-			return role != null ? role.Color : new();
+			var role = this.Roles.OrderByDescending(xr => xr.Position).FirstOrDefault(xr => xr.Color.Value is not 0);
+			return role?.Color ?? new();
 		}
 	}
 
@@ -198,15 +211,14 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// </summary>
 	[JsonIgnore]
 	public bool IsCommunicationDisabled
-		=> this.CommunicationDisabledUntil != null && this.CommunicationDisabledUntil.Value.ToUniversalTime() > DateTime.UtcNow;
+		=> this.CommunicationDisabledUntil is not null && this.CommunicationDisabledUntil.Value.ToUniversalTime() > DateTime.UtcNow;
 
 	/// <summary>
 	/// Whether the user has their communication disabled.
 	/// </summary>
 	[JsonIgnore]
 	public bool HasUnusualDmActivity
-		=> this.UnusualDmActivityUntil != null && this.UnusualDmActivityUntil.Value.ToUniversalTime() > DateTime.UtcNow;
-
+		=> this.UnusualDmActivityUntil is not null && this.UnusualDmActivityUntil.Value.ToUniversalTime() > DateTime.UtcNow;
 
 	/// <summary>
 	/// If the user is deafened
@@ -228,16 +240,21 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 
 	/// <summary>
 	/// Gets this member's voice state.
+ 	/// <note type="warning">This will throw if accessed for an oauth2 constructed member.</note>
 	/// </summary>
 	[JsonIgnore]
-	public DiscordVoiceState VoiceState
-		=> this.Discord.Guilds[this.GuildId].VoiceStates.TryGetValue(this.Id, out var voiceState) ? voiceState : null;
+	public DiscordVoiceState? VoiceState
+		=> this.Discord.Guilds[this.GuildId].VoiceStates.GetValueOrDefault(this.Id);
 
+	/// <summary>
+	/// Gets the guild id for this member.
+	/// </summary>
 	[JsonIgnore]
-	internal ulong GuildId = 0;
+	public ulong GuildId = 0;
 
 	/// <summary>
 	/// Gets the guild of which this member is a part of.
+ 	/// <note type="warning">This will throw if accessed for an oauth2 constructed member.</note>
 	/// </summary>
 	[JsonIgnore]
 	public DiscordGuild Guild
@@ -245,6 +262,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 
 	/// <summary>
 	/// Gets whether this member is the Guild owner.
+ 	/// <note type="warning">This will throw if accessed for an oauth2 constructed member.</note>
 	/// </summary>
 	[JsonIgnore]
 	public bool IsOwner
@@ -255,7 +273,11 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// </summary>
 	[JsonIgnore]
 	public int Hierarchy
-		=> this.IsOwner ? int.MaxValue : this.RoleIds.Count == 0 ? 0 : this.Roles.Max(x => x.Position);
+		=> this.IsOwner
+			? int.MaxValue
+			: this.RoleIds.Count == 0
+				? 0
+				: this.Roles.Max(x => x.Position);
 
 	/// <summary>
 	/// Gets the permissions for the current member.
@@ -265,19 +287,25 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 
 	/// <summary>
 	/// Gets the permissions for the current member.
+ 	/// <note type="warning">This will throw if accessed for an oauth2 constructed member.</note>
 	/// </summary>
 	[JsonIgnore]
 	public Permissions Permissions
 		=> this.InteractionPermissions ?? this.GetPermissions();
 
-	#region Overridden user properties
+#region Overridden user properties
 
 	/// <summary>
 	/// Gets the user.
 	/// </summary>
 	[JsonIgnore]
 	internal DiscordUser User
-		=> this.Discord.UserCache[this.Id];
+		=> this.Discord?.UserCache.TryGetValue(this.Id, out var user) ?? false ? user : this.ManualUser;
+
+	/// <summary>
+	/// Sets the user when converting a json object to <see cref="DiscordMember"/> while not having access to the user cache.
+	/// </summary>
+	public DiscordUser ManualUser { get; set; }
 
 	/// <summary>
 	/// Gets this member's username.
@@ -317,14 +345,14 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// Gets the member's global name.
 	/// </summary>
 	[JsonIgnore, DiscordInExperiment]
-	public override string GlobalName
+	public override string? GlobalName
 	{
 		get => this.User.GlobalName;
 		internal set => this.User.GlobalName = value;
 	}
 
 	/// <summary>
-	/// Gets the member's avatar hash.
+	/// Gets the member's user avatar hash.
 	/// </summary>
 	[JsonIgnore]
 	public override string AvatarHash
@@ -334,13 +362,33 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	}
 
 	/// <summary>
-	/// Gets the member's banner hash.
+	/// Gets the member's user banner hash.
 	/// </summary>
 	[JsonIgnore]
 	public override string BannerHash
 	{
 		get => this.User.BannerHash;
 		internal set => this.User.BannerHash = value;
+	}
+
+	/// <summary>
+	/// Gets the member's user avatar decoration data.
+	/// </summary>
+	[JsonIgnore]
+	public override AvatarDecorationData AvatarDecorationData
+	{
+		get => this.User.AvatarDecorationData;
+		internal set => this.User.AvatarDecorationData = value;
+	}
+
+	/// <summary>
+	/// Gets the member's clan.
+	/// </summary>
+	[JsonIgnore]
+	public override DiscordClan? Clan
+	{
+		get => this.User.Clan;
+		internal set => this.User.Clan = value;
 	}
 
 	/// <summary>
@@ -433,7 +481,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 		internal set => this.User.Flags = value;
 	}
 
-	#endregion
+#endregion
 
 	/// <summary>
 	/// Sets this member's voice mute status.
@@ -444,13 +492,21 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task SetMuteAsync(bool mute, string reason = null)
+	public Task SetMuteAsync(bool mute, string? reason = null)
 		=> this.Discord.ApiClient.ModifyGuildMemberAsync(this.GuildId, this.Id, default, default, mute, default, default, default, this.MemberFlags, reason);
 
-	public Task VerifyAsync(string reason = null)
+	/// <summary>
+	/// Manually verifies the member to bypass the Membership Screening requirements.
+	/// </summary>
+	/// <param name="reason">Reason for audit logs.</param>
+	public Task VerifyAsync(string? reason = null)
 		=> this.Discord.ApiClient.ModifyGuildMemberAsync(this.GuildId, this.Id, default, default, default, default, default, true, this.MemberFlags, reason);
 
-	public Task UnverifyAsync(string reason = null)
+	/// <summary>
+	/// Manually unverifies the member to not bypass the Membership Screening requirements anymore.
+	/// </summary>
+	/// <param name="reason">Reason for audit logs.</param>
+	public Task UnverifyAsync(string? reason = null)
 		=> this.Discord.ApiClient.ModifyGuildMemberAsync(this.GuildId, this.Id, default, default, default, default, default, false, this.MemberFlags, reason);
 
 	/// <summary>
@@ -462,7 +518,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task SetDeafAsync(bool deaf, string reason = null)
+	public Task SetDeafAsync(bool deaf, string? reason = null)
 		=> this.Discord.ApiClient.ModifyGuildMemberAsync(this.GuildId, this.Id, default, default, default, deaf, default, default, this.MemberFlags, reason);
 
 	/// <summary>
@@ -478,7 +534,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 		var mdl = new MemberEditModel();
 		action(mdl);
 
-		if (mdl.VoiceChannel.HasValue && mdl.VoiceChannel.Value != null && mdl.VoiceChannel.Value.Type != ChannelType.Voice && mdl.VoiceChannel.Value.Type != ChannelType.Stage)
+		if (mdl.VoiceChannel.HasValue && mdl.VoiceChannel.Value != null! && mdl.VoiceChannel.Value.Type is not ChannelType.Voice && mdl.VoiceChannel.Value.Type is not ChannelType.Stage)
 			throw new ArgumentException("Given channel is not a voice or stage channel.", nameof(action));
 
 		if (mdl.Nickname.HasValue && this.Discord.CurrentUser.Id == this.Id)
@@ -491,18 +547,16 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 				mdl.VoiceChannel.Map(e => e?.Id), default, this.MemberFlags, mdl.AuditLogReason).ConfigureAwait(false);
 		}
 		else
-		{
 			await this.Discord.ApiClient.ModifyGuildMemberAsync(this.Guild.Id, this.Id, mdl.Nickname,
 				mdl.Roles.Map(e => e.Select(xr => xr.Id)), mdl.Muted, mdl.Deafened,
 				mdl.VoiceChannel.Map(e => e?.Id), default, this.MemberFlags, mdl.AuditLogReason).ConfigureAwait(false);
-		}
 	}
 
 	/// <summary>
 	/// Disconnects the member from their current voice channel.
 	/// </summary>
 	public async Task DisconnectFromVoiceAsync()
-		=> await this.ModifyAsync(x => x.VoiceChannel = null).ConfigureAwait(false);
+		=> await this.ModifyAsync(x => x.VoiceChannel = null!).ConfigureAwait(false);
 
 	/// <summary>
 	/// Adds a timeout to a member.
@@ -513,7 +567,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task TimeoutAsync(DateTimeOffset until, string reason = null)
+	public Task TimeoutAsync(DateTimeOffset until, string? reason = null)
 		=> until.Subtract(DateTimeOffset.UtcNow).Days > 28 ? throw new ArgumentException("Timeout can not be longer than 28 days") : this.Discord.ApiClient.ModifyTimeoutAsync(this.Guild.Id, this.Id, until, reason);
 
 	/// <summary>
@@ -525,7 +579,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task TimeoutAsync(TimeSpan until, string reason = null)
+	public Task TimeoutAsync(TimeSpan until, string? reason = null)
 		=> this.TimeoutAsync(DateTimeOffset.UtcNow + until, reason);
 
 	/// <summary>
@@ -537,7 +591,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task TimeoutAsync(DateTime until, string reason = null)
+	public Task TimeoutAsync(DateTime until, string? reason = null)
 		=> this.TimeoutAsync(until.ToUniversalTime() - DateTime.UtcNow, reason);
 
 	/// <summary>
@@ -560,7 +614,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task GrantRoleAsync(DiscordRole role, string reason = null)
+	public Task GrantRoleAsync(DiscordRole role, string? reason = null)
 		=> this.Discord.ApiClient.AddGuildMemberRoleAsync(this.Guild.Id, this.Id, role.Id, reason);
 
 	/// <summary>
@@ -572,7 +626,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task RevokeRoleAsync(DiscordRole role, string reason = null)
+	public Task RevokeRoleAsync(DiscordRole role, string? reason = null)
 		=> this.Discord.ApiClient.RemoveGuildMemberRoleAsync(this.Guild.Id, this.Id, role.Id, reason);
 
 	/// <summary>
@@ -584,7 +638,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task ReplaceRolesAsync(IEnumerable<DiscordRole> roles, string reason = null)
+	public Task ReplaceRolesAsync(IEnumerable<DiscordRole> roles, string? reason = null)
 		=> this.Discord.ApiClient.ModifyGuildMemberAsync(this.Guild.Id, this.Id, default,
 			Optional.Some(roles.Select(xr => xr.Id)), default, default, default, default, this.MemberFlags, reason);
 
@@ -597,7 +651,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task BanAsync(int deleteMessageDays = 0, string reason = null)
+	public Task BanAsync(int deleteMessageDays = 0, string? reason = null)
 		=> this.Guild.BanMemberAsync(this, deleteMessageDays, reason);
 
 	/// <summary>
@@ -607,7 +661,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task UnbanAsync(string reason = null)
+	public Task UnbanAsync(string? reason = null)
 		=> this.Guild.UnbanMemberAsync(this, reason);
 
 	/// <summary>
@@ -619,7 +673,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	/// <exception cref="NotFoundException">Thrown when the member does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	public Task RemoveAsync(string reason = null)
+	public Task RemoveAsync(string? reason = null)
 		=> this.Discord.ApiClient.RemoveGuildMemberAsync(this.GuildId, this.Id, reason);
 
 	/// <summary>
@@ -658,7 +712,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	public async Task MakeSpeakerAsync()
 	{
 		var vs = this.VoiceState;
-		if (vs == null || vs.Channel.Type != ChannelType.Stage)
+		if (vs?.Channel?.Type is not ChannelType.Stage)
 			throw new ArgumentException("Voice state can only be updated when the user is inside an stage channel.");
 
 		await this.Discord.ApiClient.UpdateUserVoiceStateAsync(this.Guild.Id, this.Id, vs.Channel.Id, false).ConfigureAwait(false);
@@ -675,7 +729,7 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 	public async Task MoveToAudienceAsync()
 	{
 		var vs = this.VoiceState;
-		if (vs == null || vs.Channel.Type != ChannelType.Stage)
+		if (vs?.Channel?.Type is not ChannelType.Stage)
 			throw new ArgumentException("Voice state can only be updated when the user is inside an stage channel.");
 
 		await this.Discord.ApiClient.UpdateUserVoiceStateAsync(this.Guild.Id, this.Id, vs.Channel.Id, true).ConfigureAwait(false);
@@ -697,11 +751,9 @@ public class DiscordMember : DiscordUser, IEquatable<DiscordMember>
 		if (this.Guild.OwnerId == this.Id)
 			return PermissionMethods.FullPerms;
 
-		Permissions perms;
-
 		// assign @everyone permissions
 		var everyoneRole = this.Guild.EveryoneRole;
-		perms = everyoneRole.Permissions;
+		var perms = everyoneRole.Permissions;
 
 		// assign permissions from member's roles (in order)
 		perms |= this.Roles.Aggregate(Permissions.None, (c, role) => c | role.Permissions);

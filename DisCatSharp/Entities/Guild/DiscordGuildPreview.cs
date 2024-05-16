@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
@@ -32,7 +33,7 @@ public class DiscordGuildPreview : SnowflakeObject
 	/// </summary>
 	[JsonIgnore]
 	public string IconUrl
-		=> !string.IsNullOrWhiteSpace(this.IconHash) ? $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.ICONS}/{this.Id.ToString(CultureInfo.InvariantCulture)}/{this.IconHash}.{(this.IconHash.StartsWith("a_") ? "gif" : "png")}?size=1024" : null;
+		=> !string.IsNullOrWhiteSpace(this.IconHash) ? $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.ICONS}/{this.Id.ToString(CultureInfo.InvariantCulture)}/{this.IconHash}.{(this.IconHash.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024" : null;
 
 	/// <summary>
 	/// Gets the guild splash's hash.
@@ -45,7 +46,7 @@ public class DiscordGuildPreview : SnowflakeObject
 	/// </summary>
 	[JsonIgnore]
 	public string SplashUrl
-	 => !string.IsNullOrWhiteSpace(this.SplashHash) ? $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.SPLASHES}/{this.Id.ToString(CultureInfo.InvariantCulture)}/{this.SplashHash}.png?size=1024" : null;
+		=> !string.IsNullOrWhiteSpace(this.SplashHash) ? $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.SPLASHES}/{this.Id.ToString(CultureInfo.InvariantCulture)}/{this.SplashHash}.png?size=1024" : null;
 
 	/// <summary>
 	/// Gets the guild discovery splash's hash.
@@ -66,8 +67,7 @@ public class DiscordGuildPreview : SnowflakeObject
 	[JsonIgnore]
 	public IReadOnlyDictionary<ulong, DiscordEmoji> Emojis => new ReadOnlyConcurrentDictionary<ulong, DiscordEmoji>(this.EmojisInternal);
 
-	[JsonProperty("emojis", NullValueHandling = NullValueHandling.Ignore)]
-	[JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
+	[JsonProperty("emojis", NullValueHandling = NullValueHandling.Ignore), JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
 	internal ConcurrentDictionary<ulong, DiscordEmoji> EmojisInternal;
 
 	/// <summary>
@@ -76,10 +76,8 @@ public class DiscordGuildPreview : SnowflakeObject
 	[JsonIgnore]
 	public IReadOnlyDictionary<ulong, DiscordSticker> Stickers => new ReadOnlyConcurrentDictionary<ulong, DiscordSticker>(this.StickersInternal);
 
-	[JsonProperty("stickers", NullValueHandling = NullValueHandling.Ignore)]
-	[JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
+	[JsonProperty("stickers", NullValueHandling = NullValueHandling.Ignore), JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
 	internal ConcurrentDictionary<ulong, DiscordSticker> StickersInternal;
-
 
 	/// <summary>
 	/// Gets a collection of this guild's features.

@@ -26,7 +26,6 @@ internal class DcsUdpClient : BaseUdpClient
 	/// </summary>
 	private readonly BlockingCollection<byte[]> _packetQueue;
 
-
 	/// <summary>
 	/// Gets the receiver task.
 	/// </summary>
@@ -49,7 +48,7 @@ internal class DcsUdpClient : BaseUdpClient
 	/// </summary>
 	public DcsUdpClient()
 	{
-		this._packetQueue = new();
+		this._packetQueue = [];
 		this._tokenSource = new();
 	}
 
@@ -104,14 +103,13 @@ internal class DcsUdpClient : BaseUdpClient
 	private async Task ReceiverLoopAsync()
 	{
 		while (!this.TOKEN.IsCancellationRequested)
-		{
 			try
 			{
-				var packet = await this._client.ReceiveAsync().ConfigureAwait(false);
-				this._packetQueue.Add(packet.Buffer);
+				var packet = await this._client.ReceiveAsync(this.TOKEN).ConfigureAwait(false);
+				this._packetQueue.Add(packet.Buffer, this.TOKEN);
 			}
-			catch (Exception) { }
-		}
+			catch (Exception)
+			{ }
 	}
 
 	/// <summary>

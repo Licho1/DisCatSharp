@@ -144,7 +144,6 @@ internal sealed class RestGuildModifyPayload : ObservableApiObject
 	[JsonProperty("home_header")]
 	public Optional<string> HomeHeaderBase64 { get; set; }
 
-
 	/// <summary>
 	/// Gets or sets the discovery splash base64.
 	/// </summary>
@@ -422,13 +421,13 @@ internal sealed class RestGuildMemberAddPayload : IOAuth2Payload
 	/// Gets or sets the nickname.
 	/// </summary>
 	[JsonProperty("nick", NullValueHandling = NullValueHandling.Ignore)]
-	public string Nickname { get; set; }
+	public string? Nickname { get; set; }
 
 	/// <summary>
 	/// Gets or sets the roles.
 	/// </summary>
 	[JsonProperty("roles", NullValueHandling = NullValueHandling.Ignore)]
-	public IEnumerable<DiscordRole> Roles { get; set; }
+	public IEnumerable<DiscordRole>? Roles { get; set; }
 
 	/// <summary>
 	/// Gets or sets a value indicating whether mute.
@@ -840,4 +839,35 @@ internal class RestGuildUpdateUserVoiceStatePayload : ObservableApiObject
 	/// </summary>
 	[JsonProperty("suppress", NullValueHandling = NullValueHandling.Ignore)]
 	public bool? Suppress { get; set; }
+}
+
+/// <summary>
+/// Represents a guild ban payload.
+/// </summary>
+internal sealed class RestGuildBanPayload : ObservableApiObject
+{
+	/// <summary>
+	/// Gets or sets the delete message seconds.
+	/// </summary>
+	[JsonProperty("delete_message_seconds", NullValueHandling = NullValueHandling.Include)]
+	public int DeleteMessageSeconds { get; set; }
+}
+
+
+/// <summary>
+/// Represents a guild bulk ban payload.
+/// </summary>
+internal sealed class RestGuildBulkBanPayload : ObservableApiObject
+{
+	/// <summary>
+	/// Gets or sets the user ids.
+	/// </summary>
+	[JsonProperty("user_ids", NullValueHandling = NullValueHandling.Ignore)]
+	public List<ulong> UserIds { get; set; }
+
+	/// <summary>
+	/// Gets or sets the delete message seconds.
+	/// </summary>
+	[JsonProperty("delete_message_seconds", NullValueHandling = NullValueHandling.Include)]
+	public int DeleteMessageSeconds { get; set; }
 }

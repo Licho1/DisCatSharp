@@ -43,6 +43,9 @@ internal sealed class TransportApplication : ObservableApiObject
 	[JsonProperty("summary", NullValueHandling = NullValueHandling.Include), DiscordDeprecated("Empty string, will be removed in API v11")]
 	public string Summary { get; set; }
 
+	/// <summary>
+	/// Gets the bot user.
+	/// </summary>
 	[JsonProperty("bot", NullValueHandling = NullValueHandling.Ignore)]
 	public TransportUser Bot { get; set; }
 
@@ -180,6 +183,12 @@ internal sealed class TransportApplication : ObservableApiObject
 	/// </summary>
 	[JsonProperty("redirect_uris", NullValueHandling = NullValueHandling.Ignore)]
 	public Optional<List<string>> RedirectUris { get; set; }
+
+	/// <summary>
+	/// Gets or sets the integration types config.
+	/// </summary>
+	[JsonProperty("integration_types_config", NullValueHandling = NullValueHandling.Ignore)]
+	public DiscordIntegrationTypesConfig? IntegrationTypesConfig { get; set; }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="TransportApplication"/> class.

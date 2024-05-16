@@ -17,7 +17,7 @@ namespace DisCatSharp.Interactivity.EventHandling;
 internal class ModalEventWaiter : IDisposable
 {
 	private readonly DiscordClient _client;
-	private readonly ConcurrentHashSet<ModalMatchRequest> _modalMatchRequests = new();
+	private readonly ConcurrentHashSet<ModalMatchRequest> _modalMatchRequests = [];
 
 	private readonly DiscordFollowupMessageBuilder _message;
 	private readonly InteractivityConfiguration _config;
@@ -33,7 +33,11 @@ internal class ModalEventWaiter : IDisposable
 		this._client.ComponentInteractionCreated += this.Handle;
 		this._config = config;
 
-		this._message = new DiscordFollowupMessageBuilder { Content = config.ResponseMessage ?? "This modal was not meant for you.", IsEphemeral = true };
+		this._message = new()
+		{
+			Content = config.ResponseMessage ?? "This modal was not meant for you.",
+			IsEphemeral = true
+		};
 	}
 
 	/// <summary>
@@ -68,13 +72,11 @@ internal class ModalEventWaiter : IDisposable
 	private async Task Handle(DiscordClient _, ComponentInteractionCreateEventArgs args)
 	{
 		foreach (var mreq in this._modalMatchRequests)
-		{
 			if (mreq.CustomId == args.Interaction.Data.CustomId && mreq.IsMatch(args))
 				mreq.Tcs.TrySetResult(args);
 
 			else if (this._config.ResponseBehavior is InteractionResponseBehavior.Respond)
 				await args.Interaction.CreateFollowupMessageAsync(this._message).ConfigureAwait(false);
-		}
 	}
 
 	/// <summary>

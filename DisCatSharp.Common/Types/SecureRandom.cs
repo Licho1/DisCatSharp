@@ -12,10 +12,13 @@ namespace DisCatSharp.Common;
 public sealed class SecureRandom : Random, IDisposable
 {
 	/// <summary>
-	/// Gets the r n g.
+	/// Gets the random number generator.
 	/// </summary>
 	private readonly RandomNumberGenerator _rng = RandomNumberGenerator.Create();
 
+	/// <summary>
+	/// Whether this <see cref="SecureRandom"/> instance has been disposed.
+	/// </summary>
 	private volatile bool _isDisposed;
 
 	/// <summary>
@@ -97,7 +100,7 @@ public sealed class SecureRandom : Random, IDisposable
 		min += offset;
 		max += offset;
 
-		return (sbyte)(Math.Abs(this.Generate<sbyte>()) % (max - min) + min - offset);
+		return (sbyte)((Math.Abs(this.Generate<sbyte>()) % (max - min)) + min - offset);
 	}
 
 	/// <summary>
@@ -107,12 +110,9 @@ public sealed class SecureRandom : Random, IDisposable
 	/// <param name="max">Maximum value to generate. Defaults to <see cref="byte.MaxValue"/>.</param>
 	/// <returns>Generated random value.</returns>
 	public byte GetUInt8(byte min = 0, byte max = byte.MaxValue)
-	{
-		if (max <= min)
-			throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max));
-
-		return (byte)(this.Generate<byte>() % (max - min) + min);
-	}
+		=> max <= min
+			? throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max))
+			: (byte)((this.Generate<byte>() % (max - min)) + min);
 
 	/// <summary>
 	/// Generates a signed 16-bit integer within specified range.
@@ -129,7 +129,7 @@ public sealed class SecureRandom : Random, IDisposable
 		min += offset;
 		max += offset;
 
-		return (short)(Math.Abs(this.Generate<short>()) % (max - min) + min - offset);
+		return (short)((Math.Abs(this.Generate<short>()) % (max - min)) + min - offset);
 	}
 
 	/// <summary>
@@ -139,12 +139,9 @@ public sealed class SecureRandom : Random, IDisposable
 	/// <param name="max">Maximum value to generate. Defaults to <see cref="ushort.MaxValue"/>.</param>
 	/// <returns>Generated random value.</returns>
 	public ushort GetUInt16(ushort min = 0, ushort max = ushort.MaxValue)
-	{
-		if (max <= min)
-			throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max));
-
-		return (ushort)(this.Generate<ushort>() % (max - min) + min);
-	}
+		=> max <= min
+			? throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max))
+			: (ushort)((this.Generate<ushort>() % (max - min)) + min);
 
 	/// <summary>
 	/// Generates a signed 32-bit integer within specified range.
@@ -161,7 +158,7 @@ public sealed class SecureRandom : Random, IDisposable
 		min += offset;
 		max += offset;
 
-		return Math.Abs(this.Generate<int>()) % (max - min) + min - offset;
+		return (Math.Abs(this.Generate<int>()) % (max - min)) + min - offset;
 	}
 
 	/// <summary>
@@ -171,12 +168,9 @@ public sealed class SecureRandom : Random, IDisposable
 	/// <param name="max">Maximum value to generate. Defaults to <see cref="uint.MaxValue"/>.</param>
 	/// <returns>Generated random value.</returns>
 	public uint GetUInt32(uint min = 0, uint max = uint.MaxValue)
-	{
-		if (max <= min)
-			throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max));
-
-		return this.Generate<uint>() % (max - min) + min;
-	}
+		=> max <= min
+			? throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max))
+			: (this.Generate<uint>() % (max - min)) + min;
 
 	/// <summary>
 	/// Generates a signed 64-bit integer within specified range.
@@ -193,7 +187,7 @@ public sealed class SecureRandom : Random, IDisposable
 		min += offset;
 		max += offset;
 
-		return Math.Abs(this.Generate<long>()) % (max - min) + min - offset;
+		return (Math.Abs(this.Generate<long>()) % (max - min)) + min - offset;
 	}
 
 	/// <summary>
@@ -203,12 +197,9 @@ public sealed class SecureRandom : Random, IDisposable
 	/// <param name="max">Maximum value to generate. Defaults to <see cref="ulong.MaxValue"/>.</param>
 	/// <returns>Generated random value.</returns>
 	public ulong GetUInt64(ulong min = 0, ulong max = ulong.MaxValue)
-	{
-		if (max <= min)
-			throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max));
-
-		return this.Generate<ulong>() % (max - min) + min;
-	}
+		=> max <= min
+			? throw new ArgumentException("Maximum needs to be greater than minimum.", nameof(max))
+			: (this.Generate<ulong>() % (max - min)) + min;
 
 	/// <summary>
 	/// Generates a 32-bit floating-point number between 0.0 and 1.0.
@@ -280,8 +271,7 @@ public sealed class SecureRandom : Random, IDisposable
 	/// </summary>
 	public void Dispose()
 	{
-		if (this._isDisposed)
-			return;
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		this._isDisposed = true;
 		this._rng.Dispose();

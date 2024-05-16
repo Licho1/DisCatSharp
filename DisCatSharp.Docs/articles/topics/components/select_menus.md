@@ -18,12 +18,13 @@ Since a message can have up to 5 rows, you can add up to 5 select menus to a mes
 > Component Ids and option values should be unique, as this is what's sent back when a user selects one (or more) option.
 
 Select menus consist of five parts:
-- Id
-- Placeholder
-- Options
-- MinOptions
-- MaxOptions
-- Disabled
+
+-   Id
+-   Placeholder
+-   Options
+-   MinOptions
+-   MaxOptions
+-   Disabled
 
 The id of the select menu is a settable string, and is specified by the developer. Discord sends this id back in the [interaction object](https://discord.dev/interactions/slash-commands#interaction).
 
@@ -33,11 +34,12 @@ The id of the select menu is a settable string, and is specified by the develope
 You can let users choose 1 or more options using **MinOptions** and **MaxOptions**.
 
 Options consist of five parts:
-- Label
-- Value
-- Description
-- IsDefault
-- Emoji
+
+-   Label
+-   Value
+-   Description
+-   IsDefault
+-   Emoji
 
 Menu creation, for easier understanding, can be divided into two stages:
 
@@ -62,7 +64,6 @@ You can increase the maximum/minimum number of selections in the select menu con
 Description and emoji of options are optional. The label, value and description can be up to 100 characters in length.
 The emoji of a option is a [partial emoji object](https://discord.dev/interactions/message-components#component-object), which means that **any valid emoji is usable**, even if your bot does not have access to it's origin server.
 
-
 ## Adding Select Menu
 
 Adding a select menu is no different than adding a button.
@@ -73,6 +74,7 @@ var builder = new DiscordMessageBuilder()
     .WithContent("This message has select menu! Pretty neat innit?")
     .AddComponents(selectMenu);
 ```
+
 Now you have a message with a select menu. Congratulations! It's important to note that `.AddComponents()` will create a new row with each call, so **add everything you want on one row in one call!**
 
 Lets also add a second row with select menu with the ability to choose any number of options.
@@ -89,8 +91,8 @@ var secondSelectMenu = new DiscordSelectComponent("my_second_select_menu", "Plea
 
 builder.AddComponents(secondSelectMenu);
 ```
-And you're done! The select menu will now be sent when the user closes the select menu with 1 to 3 options selected.
 
+And you're done! The select menu will now be sent when the user closes the select menu with 1 to 3 options selected.
 
 ## Responding to select menus
 
@@ -98,7 +100,7 @@ When any select menu is pressed, it will fire the [ComponentInteractionCreated](
 
 In the event args, `Id` will be the id of the select menu you specified. There's also an `Interaction` property, which contains the interaction the event created. It's important to respond to an interaction within 3 seconds, or it will time out. Responding after this period will throw a `NotFoundException`.
 
-With select menus, there are two new response types: `DefferedMessageUpdate` and `UpdateMessage`.
+With select menus, there are two new response types: `DeferedMessageUpdate` and `UpdateMessage`.
 using `DeferredMessageUpdate` lets you create followup messages via the [followup message builder](xref:DisCatSharp.Entities.DiscordFollowupMessageBuilder).
 
 You have 15 minutes from that point to make followup messages. Responding to that interaction looks like this:
@@ -106,7 +108,7 @@ You have 15 minutes from that point to make followup messages. Responding to tha
 ```cs
 client.ComponentInteractionCreated += async (s, e) =>
 {
-    await e.Interaction.CreateResponseAsync(InteractionResponseType.DefferedMessageUpdate);
+    await e.Interaction.CreateResponseAsync(InteractionResponseType.DeferedMessageUpdate);
     // Do things.. //
 }
 ```
@@ -119,17 +121,19 @@ client.ComponentInteractionCreated += async (s, e) =>
     await e.Interaction.CreateResponseAsync(InteractionResponseType.UpdateMessage, new DiscordInteractionResponseBuilder().WithContent("No more select menu for you >:)"));
 }
 ```
+
 This will update the message, and without the infamous <sub>(edited)</sub> next to it. Nice.
 
-
 # Interactivity
+
 Along with the typical `WaitForMessageAsync` and `WaitForReactionAsync` methods provided by interactivity, there are also select menus implementations as well.
 
 More information about how interactivity works can be found in [the interactivity article](xref:modules_interactivity_introduction)
 
 Since select menus create interactions, there are also two additional properties in the configuration:
-- @DisCatSharp.Interactivity.InteractivityConfiguration.ResponseBehavior
-- @DisCatSharp.Interactivity.InteractivityConfiguration.ResponseMessage
+
+-   @DisCatSharp.Interactivity.InteractivityConfiguration.ResponseBehavior
+-   @DisCatSharp.Interactivity.InteractivityConfiguration.ResponseMessage
 
 @DisCatSharp.Interactivity.InteractivityConfiguration.ResponseBehavior is what interactivity will do when handling something that isn't a valid valid select menu, in the context of waiting for a specific select menu. It defaults to @DisCatSharp.Interactivity.Enums.InteractionResponseBehavior.Ignore, which will cause the interaction fail.
 

@@ -65,8 +65,7 @@ public class DiscordThreadChannel : DiscordChannel
 	[JsonIgnore]
 	public IReadOnlyDictionary<ulong, DiscordThreadChannelMember> ThreadMembers => new ReadOnlyConcurrentDictionary<ulong, DiscordThreadChannelMember>(this.ThreadMembersInternal);
 
-	[JsonProperty("thread_member", NullValueHandling = NullValueHandling.Ignore)]
-	[JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
+	[JsonProperty("thread_member", NullValueHandling = NullValueHandling.Ignore), JsonConverter(typeof(SnowflakeArrayAsDictionaryJsonConverter))]
 	internal ConcurrentDictionary<ulong, DiscordThreadChannelMember> ThreadMembersInternal;
 
 	/// <summary>
@@ -94,10 +93,10 @@ public class DiscordThreadChannel : DiscordChannel
 	/// Initializes a new instance of the <see cref="DiscordThreadChannel"/> class.
 	/// </summary>
 	internal DiscordThreadChannel()
-		: base(new() { "hashes", "guild_hashes" })
+		: base(["hashes", "guild_hashes"])
 	{ }
 
-	#region Methods
+#region Methods
 
 	/// <summary>
 	/// Modifies the current thread.
@@ -128,9 +127,12 @@ public class DiscordThreadChannel : DiscordChannel
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task AddTagAsync(ForumPostTag tag, string reason = null)
-		=> this.AppliedTagIds.Count == 5 ?
-			throw new NotSupportedException("Cannot have more than 5 applied tags.") :
-			this.Discord.ApiClient.ModifyThreadAsync(this.Id, this.Parent.Type, null, null, null, null, null, null, new List<ForumPostTag>(this.AppliedTags) { tag }, null, reason);
+		=> this.AppliedTagIds.Count == 5
+			? throw new NotSupportedException("Cannot have more than 5 applied tags.")
+			: this.Discord.ApiClient.ModifyThreadAsync(this.Id, this.Parent.Type, null, null, null, null, null, null, new List<ForumPostTag>(this.AppliedTags)
+			{
+				tag
+			}, null, reason);
 
 	/// <summary>
 	/// Remove a tag from the current thread.
@@ -147,14 +149,12 @@ public class DiscordThreadChannel : DiscordChannel
 	/// <summary>
 	/// Archives a thread.
 	/// </summary>
-	/// <param name="locked">Whether the thread should be locked.</param>
 	/// <param name="reason">Reason for audit logs.</param>
 	/// <exception cref="UnauthorizedException">Thrown when the client does not have the <see cref="Permissions.ManageThreads"/> permission.</exception>
 	/// <exception cref="NotFoundException">Thrown when the thread does not exist.</exception>
 	/// <exception cref="BadRequestException">Thrown when an invalid parameter was provided.</exception>
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
-	[DiscordDeprecated("The locked parameter will be removed soon and is not applied anymore.")]
-	public Task ArchiveAsync([DiscordDeprecated("The locked parameter will be removed soon and is not applied anymore.")] bool locked = true, string reason = null)
+	public Task ArchiveAsync(string reason = null)
 		=> this.Discord.ApiClient.ModifyThreadAsync(this.Id, this.Parent.Type, null, null, true, null, null, null, null, null, reason);
 
 	/// <summary>
@@ -187,7 +187,6 @@ public class DiscordThreadChannel : DiscordChannel
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task UnlockAsync(string reason = null)
 		=> this.Discord.ApiClient.ModifyThreadAsync(this.Id, this.Parent.Type, null, false, true, null, null, null, null, null, reason);
-
 
 	/// <summary>
 	/// Gets the members of a thread. Needs the <see cref="DiscordIntents.GuildMembers"/> intent.
@@ -231,7 +230,6 @@ public class DiscordThreadChannel : DiscordChannel
 	/// <exception cref="ServerErrorException">Thrown when Discord is unable to process the request.</exception>
 	public Task<DiscordThreadChannelMember> GetMemberAsync(ulong memberId, bool withMember = false)
 		=> this.Discord.ApiClient.GetThreadMemberAsync(this.Id, memberId, withMember);
-
 
 	/// <summary>
 	/// Tries to get a member in this thread.
@@ -315,9 +313,7 @@ public class DiscordThreadChannel : DiscordChannel
 		var members = await this.Guild.GetAllMembersAsync().ConfigureAwait(false);
 		var roleMembers = members.Where(m => m.Roles.Contains(role));
 		foreach (var member in roleMembers)
-		{
 			await this.Discord.ApiClient.AddThreadMemberAsync(this.Id, member.Id).ConfigureAwait(false);
-		}
 	}
 
 	/// <summary>
@@ -343,9 +339,7 @@ public class DiscordThreadChannel : DiscordChannel
 		var members = await this.Guild.GetAllMembersAsync().ConfigureAwait(false);
 		var roleMembers = members.Where(m => m.Roles.Contains(role));
 		foreach (var member in roleMembers)
-		{
 			await this.Discord.ApiClient.RemoveThreadMemberAsync(this.Id, member.Id).ConfigureAwait(false);
-		}
 	}
 
 	/// <summary>
@@ -388,7 +382,8 @@ public class DiscordThreadChannel : DiscordChannel
 			ChannelType.NewsThread => $"News thread {this.Name} ({this.Id})",
 			ChannelType.PublicThread => $"Thread {this.Name} ({this.Id})",
 			ChannelType.PrivateThread => $"Private thread {this.Name} ({this.Id})",
-			_ => $"Thread {this.Name} ({this.Id})",
+			_ => $"Thread {this.Name} ({this.Id})"
 		};
-	#endregion
+
+#endregion
 }

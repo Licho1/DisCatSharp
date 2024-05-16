@@ -19,11 +19,13 @@ public sealed class DiscordMessageBuilder
 		get => this._content;
 		set
 		{
-			if (value != null && value.Length > 2000)
+			if (value is { Length: > 2000 })
 				throw new ArgumentException("Content cannot exceed 2000 characters.", nameof(value));
+
 			this._content = value;
 		}
 	}
+
 	private string _content;
 
 	/// <summary>
@@ -48,7 +50,8 @@ public sealed class DiscordMessageBuilder
 	/// Gets the Embeds to be sent.
 	/// </summary>
 	public IReadOnlyList<DiscordEmbed> Embeds => this._embeds;
-	private readonly List<DiscordEmbed> _embeds = new();
+
+	private readonly List<DiscordEmbed> _embeds = [];
 
 	/// <summary>
 	/// Gets or Sets if the message should be TTS.
@@ -63,25 +66,28 @@ public sealed class DiscordMessageBuilder
 	/// <summary>
 	/// Gets the Allowed Mentions for the message to be sent.
 	/// </summary>
-	public List<IMention> Mentions { get; private set; }
+	public List<IMention>? Mentions { get; private set; }
 
 	/// <summary>
 	/// Gets the Files to be sent in the Message.
 	/// </summary>
 	public IReadOnlyCollection<DiscordMessageFile> Files => this.FilesInternal;
-	internal readonly List<DiscordMessageFile> FilesInternal = new();
+
+	internal readonly List<DiscordMessageFile> FilesInternal = [];
 
 	/// <summary>
 	/// Gets the components that will be attached to the message.
 	/// </summary>
 	public IReadOnlyList<DiscordActionRowComponent> Components => this.ComponentsInternal;
+
 	internal readonly List<DiscordActionRowComponent> ComponentsInternal = new(5);
 
 	/// <summary>
 	/// Gets the Attachments to be sent in the Message.
 	/// </summary>
 	public IReadOnlyList<DiscordAttachment> Attachments => this.AttachmentsInternal;
-	internal readonly List<DiscordAttachment> AttachmentsInternal = new();
+
+	internal readonly List<DiscordAttachment> AttachmentsInternal = [];
 
 	/// <summary>
 	/// Gets the Reply Message ID.
@@ -106,6 +112,43 @@ public sealed class DiscordMessageBuilder
 	public bool FailOnInvalidReply { get; set; }
 
 	/// <summary>
+	/// Gets the nonce for the message.
+	/// </summary>
+	public string? Nonce { get; set; }
+
+	/// <summary>
+	/// Gets whether to enforce the nonce.
+	/// </summary>
+	public bool EnforceNonce { get; set; }
+
+	/// <summary>
+	/// Gets the poll for this message.
+	/// </summary>
+	public DiscordPollBuilder? Poll { get; private set; }
+
+	/// <summary>
+	/// Sets the nonce for the message.
+	/// </summary>
+	/// <param name="nonce">The nonce for the message. Max 25 chars.</param>
+	/// <returns>The current builder to be chained.</returns>
+	public DiscordMessageBuilder WithNonce(string nonce)
+	{
+		this.Nonce = nonce;
+		return this;
+	}
+
+	/// <summary>
+	/// Whether to enforce the nonce.
+	/// </summary>
+	/// <param name="enforceNonce">Controls the nonce enforcement.</param>
+	/// <returns>The current builder to be chained.</returns>
+	public DiscordMessageBuilder WithEnforceNonce(bool enforceNonce)
+	{
+		this.EnforceNonce = enforceNonce;
+		return this;
+	}
+
+	/// <summary>
 	/// Sets the Content of the Message.
 	/// </summary>
 	/// <param name="content">The content to be set.</param>
@@ -128,6 +171,17 @@ public sealed class DiscordMessageBuilder
 	}
 
 	/// <summary>
+	/// Adds a poll to the message.
+	/// </summary>
+	/// <param name="pollBuilder">The poll builder to add.</param>
+	/// <returns>The current builder to be chained.</returns>
+	public DiscordMessageBuilder WithPoll(DiscordPollBuilder pollBuilder)
+	{
+		this.Poll = pollBuilder;
+		return this;
+	}
+
+	/// <summary>
 	/// Adds a row of components to a message, up to 5 components per row, and up to 5 rows per message.
 	/// </summary>
 	/// <param name="components">The components to add to the message.</param>
@@ -136,6 +190,14 @@ public sealed class DiscordMessageBuilder
 	public DiscordMessageBuilder AddComponents(params DiscordComponent[] components)
 		=> this.AddComponents((IEnumerable<DiscordComponent>)components);
 
+	/// <summary>
+	/// Appends several rows of components to the message
+	/// </summary>
+	/// <param name="components">The rows of components to add, holding up to five each.</param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentOutOfRangeException">No components were passed.</exception>
+	public DiscordMessageBuilder AddComponents(params DiscordActionRowComponent[] components)
+		=> this.AddComponents((IEnumerable<DiscordActionRowComponent>)components);
 
 	/// <summary>
 	/// Appends several rows of components to the message
@@ -166,11 +228,13 @@ public sealed class DiscordMessageBuilder
 		var cmpArr = components.ToArray();
 		var count = cmpArr.Length;
 
-		if (!cmpArr.Any())
-			throw new ArgumentOutOfRangeException(nameof(components), "You must provide at least one component");
-
-		if (count > 5)
-			throw new ArgumentException("Cannot add more than 5 components per action row!");
+		switch (count)
+		{
+			case 0:
+				throw new ArgumentOutOfRangeException(nameof(components), "You must provide at least one component");
+			case > 5:
+				throw new ArgumentException("Cannot add more than 5 components per action row!");
+		}
 
 		var comp = new DiscordActionRowComponent(cmpArr);
 		this.ComponentsInternal.Add(comp);
@@ -212,6 +276,7 @@ public sealed class DiscordMessageBuilder
 	{
 		if (embed == null)
 			return this; //Providing null embeds will produce a 400 response from Discord.//
+
 		this._embeds.Add(embed);
 		return this;
 	}
@@ -237,7 +302,7 @@ public sealed class DiscordMessageBuilder
 		if (this.Mentions != null)
 			this.Mentions.Add(allowedMention);
 		else
-			this.Mentions = new() { allowedMention };
+			this.Mentions = [allowedMention];
 
 		return this;
 	}
@@ -377,20 +442,20 @@ public sealed class DiscordMessageBuilder
 
 		if (mention)
 		{
-			this.Mentions ??= new();
+			this.Mentions ??= [];
 			this.Mentions.Add(new RepliedUserMention());
 		}
 
 		return this;
 	}
 
-
 	/// <summary>
 	/// Sends the Message to a specific channel
 	/// </summary>
 	/// <param name="channel">The channel the message should be sent to.</param>
 	/// <returns>The current builder to be chained.</returns>
-	public Task<DiscordMessage> SendAsync(DiscordChannel channel) => channel.SendMessageAsync(this);
+	public Task<DiscordMessage> SendAsync(DiscordChannel channel)
+		=> channel.SendMessageAsync(this);
 
 	/// <summary>
 	/// Sends the modified message.
@@ -398,13 +463,20 @@ public sealed class DiscordMessageBuilder
 	/// </summary>
 	/// <param name="msg">The original Message to modify.</param>
 	/// <returns>The current builder to be chained.</returns>
-	public Task<DiscordMessage> ModifyAsync(DiscordMessage msg) => msg.ModifyAsync(this);
+	public Task<DiscordMessage> ModifyAsync(DiscordMessage msg)
+		=> msg.ModifyAsync(this);
 
 	/// <summary>
 	/// Clears all message components on this builder.
 	/// </summary>
 	public void ClearComponents()
 		=> this.ComponentsInternal.Clear();
+
+	/// <summary>
+	/// Clears the poll from this builder.
+	/// </summary>
+	public void ClearPoll()
+		=> this.Poll = null;
 
 	/// <summary>
 	/// Allows for clearing the Message Builder so that it can be used again to send a new message.
@@ -423,6 +495,9 @@ public sealed class DiscordMessageBuilder
 		this.Sticker = null;
 		this.AttachmentsInternal.Clear();
 		this.KeepAttachmentsInternal = false;
+		this.Nonce = null;
+		this.EnforceNonce = false;
+		this.Poll = null;
 	}
 
 	/// <summary>
@@ -436,14 +511,21 @@ public sealed class DiscordMessageBuilder
 
 		if (!isModify)
 		{
-			if (this.Files?.Count == 0 && string.IsNullOrEmpty(this.Content) && (!this.Embeds?.Any() ?? true) && this.Sticker is null && (!this.Components?.Any() ?? true))
-				throw new ArgumentException("You must specify content, an embed, a sticker, a component or at least one file.");
+			if (this.Files?.Count == 0 && string.IsNullOrEmpty(this.Content) && (!this.Embeds?.Any() ?? true) && this.Sticker is null && (!this.Components?.Any() ?? true) && this.Poll is null)
+				throw new ArgumentException("You must specify content, an embed, a sticker, a component, a poll or at least one file.");
 
 			if (this.Components.Count > 5)
 				throw new InvalidOperationException("You can only have 5 action rows per message.");
 
 			if (this.Components.Any(c => c.Components.Count > 5))
 				throw new InvalidOperationException("Action rows can only have 5 components");
+
+			if (this.EnforceNonce && string.IsNullOrEmpty(this.Nonce))
+				throw new InvalidOperationException("Nonce enforcement is enabled, but no nonce is set.");
+
+			this.Poll?.Validate();
 		}
+		else if (this.Poll is not null)
+			throw new InvalidOperationException("Messages with polls can't be edited.");
 	}
 }

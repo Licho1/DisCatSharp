@@ -8,7 +8,7 @@
 ----
 
 # DisCatSharp
-## A Discord Bot Library written in C# for .NET
+## A Discord App Library written in C# for .NET
 
 ----
 
@@ -25,10 +25,15 @@
 - Partial support for burst reactions
 - Full support for onboarding
 - Support for default select menu values (THANKS MAISY FOR ADDING IT TO DISCORD)
+- DisCatSharp can now check for new releases, including for extensions
+- 🆕 Full support for User Apps
+- 🆕 Full support for [Polls](https://support.discord.com/hc/en-us/articles/22163184112407)
 
 ## Breaking
 
 - Lavalink V4 implementation. Read more [here](https://docs.dcs.aitsys.dev/articles/modules/audio/lavalink_v4/intro)
+- Dropped support for .NET 6
+- Removed previously deprecated fields and methods
 
 ----
 
@@ -59,9 +64,7 @@ Alternative hosts for our docs are:
 
 ## Bugs or Feature requests?
 
-Either join our official support guild at https://discord.gg/Uk7sggRBTm
-
-Or write us an email at [bugs@aitsys.dev](mailto:bugs@aitsys.dev).
+Either join our official support guild at https://discord.gg/2HWta4GXus, open an [issue](https://github.com/Aiko-IT-Systems/DisCatSharp/issues/new/choose) or write us an email at [bugs@aitsys.dev](mailto:bugs@aitsys.dev).
 
 <!-- All requests are tracked at [aitsys.dev](https://aitsys.dev/proje<ct/view/1/). We currently don't do that for reasons -->
 
@@ -69,8 +72,8 @@ Or write us an email at [bugs@aitsys.dev](mailto:bugs@aitsys.dev).
 
 * [Howto](https://docs.dcs.aitsys.dev/articles/getting_started/bot_account.html)
 * [Examples](https://github.com/Aiko-IT-Systems/DisCatSharp.Examples)
-* [Template Bot(:warning:Outdated)](https://github.com/Aiko-IT-Systems/DisCatSharp.TemplateBot)
-* [Public Support Bot for DisCatSharp Server](https://github.com/Aiko-IT-Systems/DisCatSharp.Support)
+* [Template App(:warning:Outdated)](https://github.com/Aiko-IT-Systems/DisCatSharp.TemplateApp)
+* [Public Support App for DisCatSharp Server](https://github.com/Aiko-IT-Systems/DisCatSharp.Support)
 
 ## Visual Studio Tools
 * [DisCatSharp Analyzer Docs](https://docs.dcs.aitsys.dev/vs/index)
@@ -128,14 +131,6 @@ Or write us an email at [bugs@aitsys.dev](mailto:bugs@aitsys.dev).
 - [SavageVictor](https://github.com/SavageVictor)
 - [Schattenclown](https://github.com/Schattenclown)
 - [FabiChan99](https://github.com/FabiChan99)
-
-## Hacktober Participants
-
-The following users participated in Hacktoberfest 2022 and contributed to DisCatSharp:
-- [Mira](https://github.com/TheXorog)
-- [Sh1be](https://github.com/xMaxximum)
-- [Lulalaby](https://github.com/Lulalaby)
-- [Badger](https://github.com/JBraunsmaJr)
 
 ## Thanks
 

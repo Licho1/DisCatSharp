@@ -76,26 +76,41 @@ public class GuildMemberUpdateEventArgs : DiscordEventArgs
 	public virtual string GuildAvatarHashBefore { get; internal set; }
 
 	public string GuildAvatarUrlBefore
-		=> string.IsNullOrWhiteSpace(this.GuildAvatarHashBefore) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.Guild.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.AVATARS}/{this.GuildAvatarHashBefore}.{(this.GuildAvatarHashBefore.StartsWith("a_") ? "gif" : "png")}?size=1024";
+		=> string.IsNullOrWhiteSpace(this.GuildAvatarHashBefore) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.Guild.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.AVATARS}/{this.GuildAvatarHashBefore}.{(this.GuildAvatarHashBefore.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
 
 	public virtual string GuildAvatarHashAfter { get; internal set; }
 
 	public string GuildAvatarUrlAfter
-		=> string.IsNullOrWhiteSpace(this.GuildAvatarHashAfter) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.Guild.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.AVATARS}/{this.GuildAvatarHashAfter}.{(this.GuildAvatarHashAfter.StartsWith("a_") ? "gif" : "png")}?size=1024";
+		=> string.IsNullOrWhiteSpace(this.GuildAvatarHashAfter) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.Guild.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.AVATARS}/{this.GuildAvatarHashAfter}.{(this.GuildAvatarHashAfter.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
 
 	public virtual string AvatarHashBefore { get; internal set; }
 
 	public string AvatarUrlBefore
-		=> string.IsNullOrWhiteSpace(this.AvatarHashBefore) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.AVATARS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}/{this.AvatarHashBefore}.{(this.AvatarHashBefore.StartsWith("a_") ? "gif" : "png")}?size=1024";
+		=> string.IsNullOrWhiteSpace(this.AvatarHashBefore) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.AVATARS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}/{this.AvatarHashBefore}.{(this.AvatarHashBefore.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
 
 	public virtual string AvatarHashAfter { get; internal set; }
 
 	public string AvatarUrlAfter
-		=> string.IsNullOrWhiteSpace(this.AvatarHashAfter) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.AVATARS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}/{this.AvatarHashAfter}.{(this.AvatarHashAfter.StartsWith("a_") ? "gif" : "png")}?size=1024";
+		=> string.IsNullOrWhiteSpace(this.AvatarHashAfter) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.AVATARS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}/{this.AvatarHashAfter}.{(this.AvatarHashAfter.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
 
+	public virtual string GuildBannerHashBefore { get; internal set; }
+
+	public string GuildBannerUrlBefore
+		=> string.IsNullOrWhiteSpace(this.GuildBannerHashBefore) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.Guild.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.BANNERS}/{this.GuildBannerHashBefore}.{(this.GuildBannerHashBefore.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
+
+	public virtual string GuildBannerHashAfter { get; internal set; }
+
+	public string GuildBannerUrlAfter
+		=> string.IsNullOrWhiteSpace(this.GuildBannerHashAfter) ? null : $"{DiscordDomain.GetDomain(CoreDomain.DiscordCdn).Url}{Endpoints.GUILDS}/{this.Guild.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.USERS}/{this.Member.Id.ToString(CultureInfo.InvariantCulture)}{Endpoints.BANNERS}/{this.GuildBannerHashAfter}.{(this.GuildBannerHashAfter.StartsWith("a_", StringComparison.Ordinal) ? "gif" : "png")}?size=1024";
+
+	public AvatarDecorationData GuildAvatarDecorationDataAfter { get; internal set; }
+
+	public AvatarDecorationData GuildAvatarDecorationDataBefore { get; internal set; }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="GuildMemberUpdateEventArgs"/> class.
 	/// </summary>
-	internal GuildMemberUpdateEventArgs(IServiceProvider provider) : base(provider) { }
+	internal GuildMemberUpdateEventArgs(IServiceProvider provider)
+		: base(provider)
+	{ }
 }

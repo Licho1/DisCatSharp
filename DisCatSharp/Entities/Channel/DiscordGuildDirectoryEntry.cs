@@ -11,7 +11,6 @@ namespace DisCatSharp.Entities;
 /// </summary>
 public class DiscordGuildDirectoryEntry : DiscordChannel, IEquatable<DiscordGuildDirectoryEntry>
 {
-
 	/// <summary>
 	/// Gets the description of the directory entry.
 	/// </summary>
@@ -30,9 +29,9 @@ public class DiscordGuildDirectoryEntry : DiscordChannel, IEquatable<DiscordGuil
 	internal DiscordGuildDirectoryEntry()
 	{ }
 
-	#region Methods
+#region Methods
 
-	#endregion
+#endregion
 
 	/// <summary>
 	/// Checks whether this <see cref="DiscordGuildDirectoryEntry"/> is equal to another object.

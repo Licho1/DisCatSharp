@@ -52,7 +52,7 @@ internal sealed class RestUserUpdateCurrentPayload : ObservableApiObject
 	/// Gets or sets the avatar base64.
 	/// </summary>
 	[JsonProperty("avatar", NullValueHandling = NullValueHandling.Include)]
-	public string AvatarBase64 { get; set; }
+	public Optional<string?> AvatarBase64 { get; set; }
 
 	/// <summary>
 	/// Gets or sets a value indicating whether avatar set.
@@ -65,6 +65,24 @@ internal sealed class RestUserUpdateCurrentPayload : ObservableApiObject
 	/// </summary>
 	public bool ShouldSerializeAvatarBase64()
 		=> this.AvatarSet;
+
+	/// <summary>
+	/// Gets or sets the banner base64.
+	/// </summary>
+	[JsonProperty("banner", NullValueHandling = NullValueHandling.Include)]
+	public Optional<string?> BannerBase64 { get; set; }
+
+	/// <summary>
+	/// Gets or sets a value indicating whether banner set.
+	/// </summary>
+	[JsonIgnore]
+	public bool BannerSet { get; set; }
+
+	/// <summary>
+	/// Gets whether the banner should be serialized.
+	/// </summary>
+	public bool ShouldSerializeBannerBase64()
+		=> this.BannerSet;
 }
 
 /// <summary>

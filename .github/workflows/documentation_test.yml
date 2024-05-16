@@ -20,19 +20,18 @@ jobs:
       with:
         token:  ${{ secrets.NYUW_TOKEN_GH }}
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3.2.0
+      uses: actions/setup-dotnet@v4.0.0
       with:
         dotnet-version: |
-          8.0.100
+          8.0.204
           7.0.403
-          6.x
     - name: Install DocFX
-      run: dotnet tool update -g docfx --version 2.71.0
+      run: dotnet tool update -g docfx
       continue-on-error: true
     - name: Restore packages
-      run: dotnet restore DisCatSharp.sln
+      run: dotnet restore --no-cache -f -v minimal DisCatSharp.sln
     - name: Build library
-      run: dotnet build -c Release -v minimal -f net7.0 --no-restore DisCatSharp.sln
+      run: dotnet build -c Release -v minimal -f net8.0 --no-restore DisCatSharp.sln
       timeout-minutes: 7
       continue-on-error: true
     #- name: Add Custom Plugins
@@ -43,7 +42,7 @@ jobs:
       shell: pwsh
       run: ./DisCatSharp.Tools/pack-docs.ps1 -DocsPath "./DisCatSharp.Docs" -OutputPath "./" -PackageName "dcs-docs-preview"
     - name: Upload packed docs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4.3.3
       with:
         name: dcs-docs-preview.zip
         path: dcs-docs-preview.zip
@@ -73,7 +72,7 @@ jobs:
       shell: pwsh
       run: Get-ChildItem -Exclude .git* | Remove-Item -Recurse -Force
     - name: Download packed docs
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: dcs-docs-preview.zip
     - name: Extract new docs

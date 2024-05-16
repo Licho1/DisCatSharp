@@ -97,7 +97,6 @@ public sealed class CommandOverloadBuilder
 			var attrs = arg.GetCustomAttributes();
 			var isParams = false;
 			foreach (var xa in attrs)
-			{
 				switch (xa)
 				{
 					case DescriptionAttribute d:
@@ -119,9 +118,8 @@ public sealed class CommandOverloadBuilder
 						attrsCustom.Add(xa);
 						break;
 				}
-			}
 
-			if (i > 2 && !ca.IsOptional && !ca.IsCatchAll && args[i - 3].IsOptional)
+			if (i > 2 && ca is { IsOptional: false, IsCatchAll: false } && args[i - 3].IsOptional)
 				throw new InvalidOverloadException("Non-optional argument cannot appear after an optional one", method, arg);
 
 			if (arg.ParameterType.IsArray && !isParams)

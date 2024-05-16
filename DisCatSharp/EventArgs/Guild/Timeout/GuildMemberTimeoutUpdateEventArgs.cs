@@ -15,24 +15,9 @@ public class GuildMemberTimeoutUpdateEventArgs : DiscordEventArgs
 	public DiscordMember Target { get; internal set; }
 
 	/// <summary>
-	/// Gets the member that timed out the member.
-	/// </summary>
-	public DiscordMember Actor { get; internal set; }
-
-	/// <summary>
 	/// Gets the guild this member was timed out.
 	/// </summary>
 	public DiscordGuild Guild { get; internal set; }
-
-	/// <summary>
-	/// Gets the audit log id.
-	/// </summary>
-	public ulong? AuditLogId { get; internal set; }
-
-	/// <summary>
-	/// Gets the audit log reason.
-	/// </summary>
-	public string AuditLogReason { get; internal set; }
 
 	/// <summary>
 	/// Gets the timeout time before the update.
@@ -47,5 +32,7 @@ public class GuildMemberTimeoutUpdateEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Initializes a new instance of the <see cref="GuildMemberTimeoutAddEventArgs"/> class.
 	/// </summary>
-	internal GuildMemberTimeoutUpdateEventArgs(IServiceProvider provider) : base(provider) { }
+	internal GuildMemberTimeoutUpdateEventArgs(IServiceProvider provider)
+		: base(provider)
+	{ }
 }

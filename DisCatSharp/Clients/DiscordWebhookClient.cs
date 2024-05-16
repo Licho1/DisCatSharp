@@ -7,6 +7,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using DisCatSharp.Common.RegularExpressions;
 using DisCatSharp.Entities;
 using DisCatSharp.Exceptions;
 using DisCatSharp.Net;
@@ -24,12 +25,6 @@ public class DiscordWebhookClient
 	/// Gets the logger for this client.
 	/// </summary>
 	public ILogger<DiscordWebhookClient> Logger { get; }
-
-	/// <summary>
-	/// Gets the webhook regex.
-	/// This regex has 2 named capture groups: "id" and "token".
-	/// </summary>
-	private static Regex s_webhookRegex { get; } = new(@"(?:https?:\/\/)?discord(?:app)?.com\/api\/(?:v\d\/)?webhooks\/(?<id>\d+)\/(?<token>[A-Za-z0-9_\-]+)", RegexOptions.ECMAScript);
 
 	/// <summary>
 	/// Gets the collection of registered webhooks.
@@ -68,8 +63,14 @@ public class DiscordWebhookClient
 	/// <param name="loggerFactory">The optional logging factory to use for this client. Defaults to null.</param>
 	/// <param name="minimumLogLevel">The minimum logging level for messages. Defaults to information.</param>
 	/// <param name="logTimestampFormat">The timestamp format to use for the logger.</param>
-	public DiscordWebhookClient(IWebProxy proxy = null!, TimeSpan? timeout = null, bool useRelativeRateLimit = true,
-		ILoggerFactory loggerFactory = null!, LogLevel minimumLogLevel = LogLevel.Information, string logTimestampFormat = "yyyy-MM-dd HH:mm:ss zzz")
+	public DiscordWebhookClient(
+		IWebProxy proxy = null!,
+		TimeSpan? timeout = null,
+		bool useRelativeRateLimit = true,
+		ILoggerFactory loggerFactory = null!,
+		LogLevel minimumLogLevel = LogLevel.Information,
+		string logTimestampFormat = "yyyy-MM-dd HH:mm:ss zzz"
+	)
 	{
 		this.MinimumLogLevel = minimumLogLevel;
 		this.LogTimestampFormat = logTimestampFormat;
@@ -85,7 +86,7 @@ public class DiscordWebhookClient
 		var parsedTimeout = timeout ?? TimeSpan.FromSeconds(10);
 
 		this.ApiClient = new(proxy!, parsedTimeout, useRelativeRateLimit, this.Logger);
-		this.Hooks = new();
+		this.Hooks = [];
 		this.Webhooks = new ReadOnlyCollection<DiscordWebhook>(this.Hooks);
 	}
 
@@ -99,6 +100,7 @@ public class DiscordWebhookClient
 	{
 		if (string.IsNullOrWhiteSpace(token))
 			throw new ArgumentNullException(nameof(token));
+
 		token = token.Trim();
 
 		if (this.Hooks.Any(x => x.Id == id))
@@ -117,10 +119,9 @@ public class DiscordWebhookClient
 	/// <returns>The registered webhook.</returns>
 	public Task<DiscordWebhook> AddWebhookAsync(Uri url)
 	{
-		if (url == null)
-			throw new ArgumentNullException(nameof(url));
+		ArgumentNullException.ThrowIfNull(url);
 
-		var m = s_webhookRegex.Match(url.ToString());
+		var m = DiscordRegEx.WebhookRegex().Match(url.ToString());
 		if (!m.Success)
 			throw new ArgumentException("Invalid webhook URL supplied.", nameof(url));
 
@@ -141,8 +142,7 @@ public class DiscordWebhookClient
 	/// <returns>The registered webhook.</returns>
 	public async Task<DiscordWebhook> AddWebhookAsync(ulong id, BaseDiscordClient client)
 	{
-		if (client == null)
-			throw new ArgumentNullException(nameof(client));
+		ArgumentNullException.ThrowIfNull(client);
 
 		if (this.Hooks.Any(x => x.Id == id))
 			throw new ArgumentException("This webhook is already registered with this client.");
@@ -161,8 +161,7 @@ public class DiscordWebhookClient
 	/// <returns>The registered webhook.</returns>
 	public DiscordWebhook AddWebhook(DiscordWebhook webhook)
 	{
-		if (webhook == null!)
-			throw new ArgumentNullException(nameof(webhook));
+		ArgumentNullException.ThrowIfNull(webhook);
 
 		if (this.Hooks.Any(x => x.Id == webhook.Id))
 			throw new ArgumentException("This webhook is already registered with this client.");
@@ -207,7 +206,6 @@ public class DiscordWebhookClient
 		var messages = new Dictionary<DiscordWebhook, DiscordMessage>();
 
 		foreach (var hook in this.Hooks)
-		{
 			try
 			{
 				if (this.Username != null)
@@ -220,7 +218,6 @@ public class DiscordWebhookClient
 			{
 				deadHooks.Add(hook);
 			}
-		}
 
 		// Removing dead webhooks from collection
 		foreach (var xwh in deadHooks)

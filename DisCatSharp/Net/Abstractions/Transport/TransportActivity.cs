@@ -153,7 +153,8 @@ internal sealed class TransportActivity : ObservableApiObject
 	/// <summary>
 	/// Initializes a new instance of the <see cref="TransportActivity"/> class.
 	/// </summary>
-	internal TransportActivity() { }
+	internal TransportActivity()
+	{ }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="TransportActivity"/> class.
@@ -332,7 +333,7 @@ internal sealed class GamePartySizeConverter : JsonConverter
 		return new TransportActivity.GameParty.GamePartySize
 		{
 			Current = (long)arr[0],
-			Maximum = (long)arr[1],
+			Maximum = (long)arr[1]
 		};
 	}
 

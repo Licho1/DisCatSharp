@@ -15,7 +15,8 @@ namespace DisCatSharp.Common.Types;
 public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 {
 	/// <inheritdoc />
-	public ulong Capacity => this._segments.Aggregate(0UL, (a, x) => a + (ulong)x.Memory.Length); // .Sum() does only int
+	public ulong Capacity =>
+		this._segments.Aggregate(0UL, (a, x) => a + (ulong)x.Memory.Length); // .Sum() does only int
 
 	/// <inheritdoc />
 	public ulong Length { get; private set; }
@@ -39,7 +40,10 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	/// <param name="initialSegmentCount">Number of segments to allocate. Defaults to 0.</param>
 	/// <param name="memPool">Memory pool to use for renting buffers. Defaults to <see cref="MemoryPool{T}.Shared"/>.</param>
 	/// <param name="clearOnDispose">Determines whether the underlying buffers should be cleared on exit. If dealing with sensitive data, it might be a good idea to set this option to true.</param>
-	public MemoryBuffer(int segmentSize = 65536, int initialSegmentCount = 0, MemoryPool<byte> memPool = default, bool clearOnDispose = false)
+	public MemoryBuffer(
+		int segmentSize = 65536, int initialSegmentCount = 0, MemoryPool<byte>? memPool = default,
+		bool clearOnDispose = false
+	)
 	{
 		this._itemSize = Unsafe.SizeOf<T>();
 		if (segmentSize % this._itemSize != 0)
@@ -64,8 +68,7 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	/// <inheritdoc />
 	public void Write(ReadOnlySpan<T> data)
 	{
-		if (this._isDisposed)
-			throw new ObjectDisposedException("This buffer is disposed.");
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		var src = MemoryMarshal.AsBytes(data);
 		this.Grow(src.Length);
@@ -86,11 +89,11 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 			this.Length += (ulong)avs;
 			this._lastSegmentLength += avs;
 
-			if (this._lastSegmentLength == mem.Length)
-			{
-				this._segNo++;
-				this._lastSegmentLength = 0;
-			}
+			if (this._lastSegmentLength != mem.Length)
+				continue;
+
+			this._segNo++;
+			this._lastSegmentLength = 0;
 		}
 	}
 
@@ -105,8 +108,7 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	/// <inheritdoc />
 	public void Write(Stream stream)
 	{
-		if (this._isDisposed)
-			throw new ObjectDisposedException("This buffer is disposed.");
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		if (stream.CanSeek)
 			this.WriteStreamSeekable(stream);
@@ -144,11 +146,11 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 			this.Length += (ulong)avs;
 			this._lastSegmentLength += avs;
 
-			if (this._lastSegmentLength == mem.Length)
-			{
-				this._segNo++;
-				this._lastSegmentLength = 0;
-			}
+			if (this._lastSegmentLength != mem.Length)
+				continue;
+
+			this._segNo++;
+			this._lastSegmentLength = 0;
 		}
 	}
 
@@ -169,8 +171,7 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	public bool Read(Span<T> destination, ulong source, out int itemsWritten)
 	{
 		itemsWritten = 0;
-		if (this._isDisposed)
-			throw new ObjectDisposedException("This buffer is disposed.");
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		source *= (ulong)this._itemSize;
 		if (source > this.Count)
@@ -230,8 +231,7 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	/// <inheritdoc />
 	public T[] ToArray()
 	{
-		if (this._isDisposed)
-			throw new ObjectDisposedException("This buffer is disposed.");
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		var bytes = new T[this.Count];
 		this.Read(bytes, 0, out _);
@@ -241,8 +241,7 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	/// <inheritdoc />
 	public void CopyTo(Stream destination)
 	{
-		if (this._isDisposed)
-			throw new ObjectDisposedException("This buffer is disposed.");
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		var longest = this._segments.Max(x => x.Memory.Length);
 		var buff = new byte[longest];
@@ -260,8 +259,7 @@ public sealed class MemoryBuffer<T> : IMemoryBuffer<T> where T : unmanaged
 	/// <inheritdoc />
 	public void Clear()
 	{
-		if (this._isDisposed)
-			throw new ObjectDisposedException("This buffer is disposed.");
+		ObjectDisposedException.ThrowIf(this._isDisposed, this);
 
 		this._segNo = 0;
 		this._lastSegmentLength = 0;

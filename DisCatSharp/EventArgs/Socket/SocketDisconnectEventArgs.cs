@@ -15,12 +15,14 @@ public class SocketCloseEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Gets the close message sent by remote host.
 	/// </summary>
-	public string CloseMessage { get; internal set; }
+	public string? CloseMessage { get; internal set; }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SocketCloseEventArgs"/> class.
 	/// </summary>
-	public SocketCloseEventArgs(IServiceProvider provider) : base(provider) { }
+	public SocketCloseEventArgs(IServiceProvider provider)
+		: base(provider)
+	{ }
 }
 
 /// <summary>
@@ -36,5 +38,7 @@ public class SocketErrorEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Initializes a new instance of the <see cref="SocketErrorEventArgs"/> class.
 	/// </summary>
-	public SocketErrorEventArgs(IServiceProvider provider) : base(provider) { }
+	public SocketErrorEventArgs(IServiceProvider provider)
+		: base(provider)
+	{ }
 }

@@ -24,7 +24,8 @@ public sealed class DiscordComponentEmoji : ObservableApiObject
 	/// <summary>
 	/// Constructs a new component emoji to add to a <see cref="DiscordComponent"/>.
 	/// </summary>
-	public DiscordComponentEmoji() { }
+	public DiscordComponentEmoji()
+	{ }
 
 	/// <summary>
 	/// Constructs a new component emoji from an emoji Id.
@@ -43,6 +44,7 @@ public sealed class DiscordComponentEmoji : ObservableApiObject
 	{
 		if (!DiscordEmoji.IsValidUnicode(name))
 			throw new ArgumentException("Only unicode emojis can be passed.");
+
 		this.Name = name;
 	}
 

@@ -5,8 +5,8 @@ items:
   items:
   - uid: DisCatSharp.VoiceNext.AudioFormat
     name: AudioFormat
-  - uid: DisCatSharp.VoiceNext.DiscordClientExtensions
-    name: DiscordClientExtensions
+  - uid: DisCatSharp.VoiceNext.ExtensionMethods
+    name: ExtensionMethods
   - uid: DisCatSharp.VoiceNext.IVoiceFilter
     name: IVoiceFilter
   - uid: DisCatSharp.VoiceNext.StreamExtensions
@@ -28,6 +28,8 @@ items:
   items:
   - uid: DisCatSharp.VoiceNext.Codec.EncryptionMode
     name: EncryptionMode
+  - uid: DisCatSharp.VoiceNext.Codec.Opus
+    name: Opus
   - uid: DisCatSharp.VoiceNext.Codec.OpusDecoder
     name: OpusDecoder
 - uid: DisCatSharp.VoiceNext.EventArgs

@@ -20,11 +20,13 @@ public sealed class DiscordEmbedBuilder
 		get => this._title;
 		set
 		{
-			if (value != null && value.Length > 256)
+			if (value is { Length: > 256 })
 				throw new ArgumentException("Title length cannot exceed 256 characters.", nameof(value));
+
 			this._title = value;
 		}
 	}
+
 	private string _title;
 
 	/// <summary>
@@ -35,11 +37,13 @@ public sealed class DiscordEmbedBuilder
 		get => this._description;
 		set
 		{
-			if (value != null && value.Length > 4096)
+			if (value is { Length: > 4096 })
 				throw new ArgumentException("Description length cannot exceed 4096 characters.", nameof(value));
+
 			this._description = value;
 		}
 	}
+
 	private string _description;
 
 	/// <summary>
@@ -50,6 +54,7 @@ public sealed class DiscordEmbedBuilder
 		get => this._url?.ToString();
 		set => this._url = string.IsNullOrEmpty(value) ? null : new Uri(value);
 	}
+
 	private Uri _url;
 
 	/// <summary>
@@ -70,6 +75,7 @@ public sealed class DiscordEmbedBuilder
 		get => this._imageUri?.ToString();
 		set => this._imageUri = string.IsNullOrEmpty(value) ? null : new DiscordUri(value);
 	}
+
 	private DiscordUri _imageUri;
 
 	/// <summary>
@@ -91,7 +97,8 @@ public sealed class DiscordEmbedBuilder
 	/// Gets the embed's fields.
 	/// </summary>
 	public IReadOnlyList<DiscordEmbedField> Fields { get; }
-	private readonly List<DiscordEmbedField> _fields = new();
+
+	private readonly List<DiscordEmbedField> _fields = [];
 
 	/// <summary>
 	/// Constructs a new empty embed builder.
@@ -304,6 +311,7 @@ public sealed class DiscordEmbedBuilder
 	{
 		if (!string.IsNullOrEmpty(name) && name.Length > 256)
 			throw new NotSupportedException("Embed author name can not exceed 256 chars. See https://discord.com/developers/docs/resources/channel#embed-limits.");
+
 		this.Author = string.IsNullOrEmpty(name) && string.IsNullOrEmpty(url) && string.IsNullOrEmpty(iconUrl)
 			? null
 			: new EmbedAuthor
@@ -323,7 +331,7 @@ public sealed class DiscordEmbedBuilder
 	/// <returns>This embed builder.</returns>
 	public DiscordEmbedBuilder WithFooter(string text = null, string iconUrl = null)
 	{
-		if (text != null && text.Length > 2048)
+		if (text is { Length: > 2048 })
 			throw new ArgumentException("Footer text length cannot exceed 2048 characters.", nameof(text));
 
 		this.Footer = string.IsNullOrEmpty(text) && string.IsNullOrEmpty(iconUrl)
@@ -464,7 +472,10 @@ public sealed class DiscordEmbedBuilder
 			};
 
 		if (this._imageUri != null)
-			embed.Image = new() { Url = this._imageUri };
+			embed.Image = new()
+			{
+				Url = this._imageUri
+			};
 		if (this.Thumbnail != null)
 			embed.Thumbnail = new()
 			{
@@ -477,13 +488,11 @@ public sealed class DiscordEmbedBuilder
 
 		var charCount = 0;
 		if (embed.Fields.Any())
-		{
 			foreach (var field in embed.Fields)
 			{
 				charCount += field.Name.Length;
 				charCount += field.Value.Length;
 			}
-		}
 
 		if (embed.Author != null && !string.IsNullOrEmpty(embed.Author.Name))
 			charCount += embed.Author.Name.Length;
@@ -522,11 +531,13 @@ public sealed class DiscordEmbedBuilder
 			get => this._name;
 			set
 			{
-				if (value != null && value.Length > 256)
+				if (value is { Length: > 256 })
 					throw new ArgumentException("Author name length cannot exceed 256 characters.", nameof(value));
+
 				this._name = value;
 			}
 		}
+
 		private string _name;
 
 		/// <summary>
@@ -537,6 +548,7 @@ public sealed class DiscordEmbedBuilder
 			get => this.Uri?.ToString();
 			set => this.Uri = string.IsNullOrEmpty(value) ? null : new Uri(value);
 		}
+
 		internal Uri Uri;
 
 		/// <summary>
@@ -547,6 +559,7 @@ public sealed class DiscordEmbedBuilder
 			get => this.IconUri?.ToString();
 			set => this.IconUri = string.IsNullOrEmpty(value) ? null : new DiscordUri(value);
 		}
+
 		internal DiscordUri IconUri;
 	}
 
@@ -563,11 +576,13 @@ public sealed class DiscordEmbedBuilder
 			get => this._text;
 			set
 			{
-				if (value != null && value.Length > 2048)
+				if (value is { Length: > 2048 })
 					throw new ArgumentException("Footer text length cannot exceed 2048 characters.", nameof(value));
+
 				this._text = value;
 			}
 		}
+
 		private string _text;
 
 		/// <summary>
@@ -578,6 +593,7 @@ public sealed class DiscordEmbedBuilder
 			get => this.IconUri?.ToString();
 			set => this.IconUri = string.IsNullOrEmpty(value) ? null : new DiscordUri(value);
 		}
+
 		internal DiscordUri IconUri;
 	}
 
@@ -594,6 +610,7 @@ public sealed class DiscordEmbedBuilder
 			get => this.Uri?.ToString();
 			set => this.Uri = string.IsNullOrEmpty(value) ? null : new DiscordUri(value);
 		}
+
 		internal DiscordUri Uri;
 
 		/// <summary>
@@ -604,6 +621,7 @@ public sealed class DiscordEmbedBuilder
 			get => this._height;
 			set => this._height = value >= 0 ? value : 0;
 		}
+
 		private int _height;
 
 		/// <summary>
@@ -614,6 +632,7 @@ public sealed class DiscordEmbedBuilder
 			get => this._width;
 			set => this._width = value >= 0 ? value : 0;
 		}
+
 		private int _width;
 	}
 }

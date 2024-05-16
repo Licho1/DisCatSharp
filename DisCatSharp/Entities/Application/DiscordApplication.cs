@@ -177,7 +177,12 @@ public sealed class DiscordApplication : DiscordMessageApplication, IEquatable<D
 	/// <summary>
 	/// Gets the redirect uris.
 	/// </summary>
-	public List<string> RedirectUris { get; set; } = new();
+	public List<string> RedirectUris { get; set; } = [];
+
+	/// <summary>
+	/// Gets the integration types config.
+	/// </summary>
+	public DiscordIntegrationTypesConfig? IntegrationTypesConfig { get; set; }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="DiscordApplication"/> class.
@@ -196,11 +201,11 @@ public sealed class DiscordApplication : DiscordMessageApplication, IEquatable<D
 		if (fmt == ImageFormat.Unknown)
 			throw new ArgumentException("You must specify valid image format.", nameof(fmt));
 
-		if (size < 16 || size > 2048)
+		if (size is < 16 or > 2048)
 			throw new ArgumentOutOfRangeException(nameof(size));
 
 		var log = Math.Log(size, 2);
-		if (log < 4 || log > 11 || log % 1 != 0)
+		if (log < 4 || log > 11 || log % 1 is not 0)
 			throw new ArgumentOutOfRangeException(nameof(size));
 
 		var sfmt = "";
@@ -210,7 +215,7 @@ public sealed class DiscordApplication : DiscordMessageApplication, IEquatable<D
 			ImageFormat.Jpeg => "jpg",
 			ImageFormat.Auto or ImageFormat.Png => "png",
 			ImageFormat.WebP => "webp",
-			_ => throw new ArgumentOutOfRangeException(nameof(fmt)),
+			_ => throw new ArgumentOutOfRangeException(nameof(fmt))
 		};
 		var ssize = size.ToString(CultureInfo.InvariantCulture);
 		return !string.IsNullOrWhiteSpace(this.CoverImageHash)
@@ -433,7 +438,7 @@ public sealed class DiscordSpotifyAsset : DiscordAsset
 /// <summary>
 /// Determines the type of the asset attached to the application.
 /// </summary>
-public enum ApplicationAssetType : int
+public enum ApplicationAssetType
 {
 	/// <summary>
 	/// Unknown type. This indicates something went terribly wrong.

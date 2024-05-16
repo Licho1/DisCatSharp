@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 
 using DisCatSharp.Enums;
 
@@ -62,7 +61,8 @@ public sealed class DiscordMentionableSelectComponent : DiscordBaseSelectCompone
 	/// <summary>
 	/// Constructs a new <see cref="DiscordMentionableSelectComponent"/>.
 	/// </summary>
-	public DiscordMentionableSelectComponent() : base()
+	public DiscordMentionableSelectComponent()
+		: base()
 	{
 		this.Type = ComponentType.MentionableSelect;
 	}

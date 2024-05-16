@@ -10,7 +10,7 @@ namespace DisCatSharp.ApplicationCommands.Entities;
 /// <summary>
 /// Represents a command translator.
 /// </summary>
-internal class CommandTranslator
+public sealed class CommandTranslator
 {
 	/// <summary>
 	/// Gets the command name.
@@ -35,23 +35,31 @@ internal class CommandTranslator
 	/// Gets the command name translations.
 	/// </summary>
 	[JsonProperty("name_translations")]
-	internal Dictionary<string, string> NameTranslationDictionary { get; set; }
+	public Dictionary<string, string>? NameTranslationsDictionary { get; set; }
+
+	/// <summary>
+	/// Gets the command name translations.
+	/// </summary>
 	[JsonIgnore]
-	public DiscordApplicationCommandLocalization NameTranslations
-		=> new(this.NameTranslationDictionary);
+	public DiscordApplicationCommandLocalization? NameTranslations
+		=> this.NameTranslationsDictionary is not null ? new(this.NameTranslationsDictionary) : null;
 
 	/// <summary>
 	/// Gets the command description translations.
 	/// </summary>
 	[JsonProperty("description_translations")]
-	internal Dictionary<string, string> DescriptionTranslationDictionary { get; set; }
+	public Dictionary<string, string>? DescriptionTranslationsDictionary { get; set; }
+
+	/// <summary>
+	/// Gets the command description translations.
+	/// </summary>
 	[JsonIgnore]
-	public DiscordApplicationCommandLocalization DescriptionTranslations
-		=> new(this.DescriptionTranslationDictionary);
+	public DiscordApplicationCommandLocalization? DescriptionTranslations
+		=> this.DescriptionTranslationsDictionary is not null ? new(this.DescriptionTranslationsDictionary) : null;
 
 	/// <summary>
 	/// Gets the option translators, if applicable.
 	/// </summary>
 	[JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
-	public List<OptionTranslator> Options { get; set; }
+	public List<OptionTranslator>? Options { get; set; }
 }

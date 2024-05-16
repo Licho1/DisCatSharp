@@ -39,15 +39,15 @@ internal sealed class StatusUpdate : ObservableApiObject
 			UserStatus.DoNotDisturb => "dnd",
 			UserStatus.Invisible or UserStatus.Offline => "invisible",
 			UserStatus.Streaming => "streaming",
-			_ => "online",
+			_ => "online"
 		};
 
 	/// <summary>
 	/// Gets or sets the game the user is playing.
 	/// </summary>
 	[JsonProperty("game", NullValueHandling = NullValueHandling.Ignore)]
-	public TransportActivity Activity { get; set; }
+	public TransportActivity? Activity { get; set; }
 
 	[JsonIgnore]
-	internal DiscordActivity ActivityInternal;
+	internal DiscordActivity? ActivityInternal;
 }

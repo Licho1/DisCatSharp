@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+        - "DisCatSharp.Docs/**"
+        - "DisCatSharp.Archive/**"
+        - "DisCatSharp.Tools/**"
+        - "DisCatSharp.Logos/**"
+        - "DisCatSharp.Attributes/**"
+        - "*.md"
+        - "*.json"
   pull_request:
   merge_group:
   workflow_dispatch:
@@ -26,13 +34,43 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3.2.0
+      uses: actions/setup-dotnet@v4.0.0
       with:
         dotnet-version: |
-          8.0.100
+          8.0.204
           7.0.404
-          6.x
+    - name: Restore dependencies
+      run: |
+        dotnet restore --no-cache -f -v minimal DisCatSharp.sln
+        dotnet restore --no-cache -f -v minimal DisCatSharp.Tools/DisCatSharp.Tools.sln
     - name: Build library
-      run: dotnet build -c Release -v minimal DisCatSharp.sln
+      run: dotnet build -c Release -v minimal --no-restore DisCatSharp.sln
+    - name: Build tools
+      run: dotnet build -c Release -v minimal --no-restore DisCatSharp.Tools/DisCatSharp.Tools.sln
     - name: Test library
       run: dotnet test -v minimal -c Release --no-restore --no-build DisCatSharp.sln
+  pack:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    name: "Pack and Artifact"
+    needs: build
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4.0.0
+      with:
+        dotnet-version: |
+          8.0.204
+          7.0.404
+    - name: Restore Packages
+      run: dotnet restore --no-cache -f -v minimal DisCatSharp.sln
+    - name: Build library
+      run: dotnet build -c Release -v minimal --no-restore DisCatSharp.sln
+    - name: Publish library
+      run: dotnet pack -c Release -v minimal --no-build --no-restore --include-symbols --include-source -o ./artifacts DisCatSharp.sln
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4.3.3
+      with:
+        name: DisCatSharp
+        path: ./artifacts/

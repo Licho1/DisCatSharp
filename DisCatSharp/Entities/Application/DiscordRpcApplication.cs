@@ -25,8 +25,10 @@ public sealed class DiscordRpcApplication : SnowflakeObject, IEquatable<DiscordR
 
 	[JsonProperty("description")]
 	public string? Description;
+
 	[JsonProperty("summary")]
 	public string? Summary;
+
 	[JsonProperty("type")]
 	public string Type;
 
@@ -44,8 +46,10 @@ public sealed class DiscordRpcApplication : SnowflakeObject, IEquatable<DiscordR
 
 	[JsonProperty("terms_of_service_url")]
 	public string? TermsOfServiceUrl;
+
 	[JsonProperty("privacy_policy_url")]
 	public string? PrivacyPolicyUrl;
+
 	[JsonProperty("install_params")]
 	public DiscordApplicationInstallParams InstallParams;
 

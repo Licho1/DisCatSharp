@@ -61,13 +61,13 @@ public partial class DiscordGuild
 	/// <returns>The processed audit log list as readonly.</returns>
 	internal async Task<IReadOnlyList<DiscordAuditLogEntry>> ProcessAuditLog(List<AuditLog> auditLogApiResult)
 	{
-		List<AuditLogUser> amr = new();
+		List<AuditLogUser> amr = [];
 		if (auditLogApiResult.Any(ar => ar.Users != null && ar.Users.Any()))
 			amr = auditLogApiResult.SelectMany(xa => xa.Users)
 				.GroupBy(xu => xu.Id)
 				.Select(xgu => xgu.First()).ToList();
 
-		if (amr.Any())
+		if (amr.Count != 0)
 			foreach (var xau in amr)
 			{
 				if (this.Discord.UserCache.ContainsKey(xau.Id))
@@ -80,7 +80,10 @@ public partial class DiscordGuild
 					Discriminator = xau.Discriminator,
 					AvatarHash = xau.AvatarHash
 				};
-				var xu = new DiscordUser(xtu) { Discord = this.Discord };
+				var xu = new DiscordUser(xtu)
+				{
+					Discord = this.Discord
+				};
 				xu = this.Discord.UserCache.AddOrUpdate(xu.Id, xu, (id, old) =>
 				{
 					old.Username = xu.Username;
@@ -91,50 +94,66 @@ public partial class DiscordGuild
 				});
 			}
 
-		List<AuditLogGuildScheduledEvent> atgse = new();
+		List<AuditLogGuildScheduledEvent> atgse = [];
 		if (auditLogApiResult.Any(ar => ar.ScheduledEvents != null && ar.ScheduledEvents.Any()))
 			atgse = auditLogApiResult.SelectMany(xa => xa.ScheduledEvents)
 				.GroupBy(xse => xse.Id)
 				.Select(xgse => xgse.First()).ToList();
 
-		List<AuditLogThread> ath = new();
+		List<AuditLogThread> ath = [];
 		if (auditLogApiResult.Any(ar => ar.Threads != null && ar.Threads.Any()))
 			ath = auditLogApiResult.SelectMany(xa => xa.Threads)
 				.GroupBy(xt => xt.Id)
 				.Select(xgt => xgt.First()).ToList();
 
-		List<AuditLogIntegration> aig = new();
+		List<AuditLogIntegration> aig = [];
 		if (auditLogApiResult.Any(ar => ar.Integrations != null && ar.Integrations.Any()))
 			aig = auditLogApiResult.SelectMany(xa => xa.Integrations)
 				.GroupBy(xi => xi.Id)
 				.Select(xgi => xgi.First()).ToList();
 
-		List<AuditLogWebhook> ahr = new();
+		List<AuditLogWebhook> ahr = [];
 		if (auditLogApiResult.Any(ar => ar.Webhooks != null && ar.Webhooks.Any()))
 			ahr = auditLogApiResult.SelectMany(xa => xa.Webhooks)
 				.GroupBy(xh => xh.Id)
 				.Select(xgh => xgh.First()).ToList();
 
-		List<DiscordMember> ams = new();
-		Dictionary<ulong, DiscordMember> amd = new();
-		if (amr.Any())
-			ams = amr.Select(xau => this.MembersInternal != null && this.MembersInternal.TryGetValue(xau.Id, out var member) ? member : new() { Discord = this.Discord, Id = xau.Id, GuildId = this.Id }).ToList();
-		if (ams.Any())
+		List<DiscordMember> ams = [];
+		Dictionary<ulong, DiscordMember> amd = [];
+		if (amr.Count != 0)
+			ams = amr.Select(xau => this.MembersInternal != null && this.MembersInternal.TryGetValue(xau.Id, out var member)
+				? member
+				: new()
+				{
+					Discord = this.Discord,
+					Id = xau.Id,
+					GuildId = this.Id
+				}).ToList();
+		if (ams.Count != 0)
 			amd = ams.ToDictionary(xm => xm.Id, xm => xm);
 
-#pragma warning disable CS0219
 		Dictionary<ulong, DiscordThreadChannel> dtc = null;
 		Dictionary<ulong, DiscordIntegration> di = null;
 		Dictionary<ulong, DiscordScheduledEvent> dse = null;
-#pragma warning restore
 
 		Dictionary<ulong, DiscordWebhook> ahd = null;
-		if (ahr.Any())
+		if (ahr.Count != 0)
 		{
 			var whr = await this.GetWebhooksAsync().ConfigureAwait(false);
 			var whs = whr.ToDictionary(xh => xh.Id, xh => xh);
 
-			var amh = ahr.Select(xah => whs.TryGetValue(xah.Id, out var webhook) ? webhook : new() { Discord = this.Discord, Name = xah.Name, Id = xah.Id, AvatarHash = xah.AvatarHash, ChannelId = xah.ChannelId, GuildId = xah.GuildId, Token = xah.Token });
+			var amh = ahr.Select(xah => whs.TryGetValue(xah.Id, out var webhook)
+				? webhook
+				: new()
+				{
+					Discord = this.Discord,
+					Name = xah.Name,
+					Id = xah.Id,
+					AvatarHash = xah.AvatarHash,
+					ChannelId = xah.ChannelId,
+					GuildId = xah.GuildId,
+					Token = xah.Token
+				});
 			ahd = amh.ToDictionary(xh => xh.Id, xh => xh);
 		}
 
@@ -168,8 +187,18 @@ public partial class DiscordGuild
 
 							return new()
 							{
-								Before = this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id },
-								After = this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id }
+								Before = this.GetChannel(t1) ?? new DiscordChannel
+								{
+									Id = t1,
+									Discord = this.Discord,
+									GuildId = this.Id
+								},
+								After = this.GetChannel(t2) ?? new DiscordChannel
+								{
+									Id = t1,
+									Discord = this.Discord,
+									GuildId = this.Id
+								}
 							};
 						}
 
@@ -297,6 +326,7 @@ public partial class DiscordGuild
 								break;
 						}
 					}
+
 					break;
 
 				case AuditLogActionType.ChannelCreate:
@@ -304,12 +334,16 @@ public partial class DiscordGuild
 				case AuditLogActionType.ChannelUpdate:
 					entry = new DiscordAuditLogChannelEntry
 					{
-						Target = this.GetChannel(xac.TargetId.Value) ?? new DiscordChannel { Id = xac.TargetId.Value, Discord = this.Discord, GuildId = this.Id }
+						Target = this.GetChannel(xac.TargetId.Value) ?? new DiscordChannel
+						{
+							Id = xac.TargetId.Value,
+							Discord = this.Discord,
+							GuildId = this.Id
+						}
 					};
 
 					var entrychn = entry as DiscordAuditLogChannelEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "name":
@@ -342,11 +376,19 @@ public partial class DiscordGuild
 							case "permission_overwrites":
 								var olds = xc.OldValues?.OfType<JObject>()
 									?.Select(xjo => xjo.ToObject<DiscordOverwrite>())
-									?.Select(xo => { xo.Discord = this.Discord; return xo; });
+									?.Select(xo =>
+									{
+										xo.Discord = this.Discord;
+										return xo;
+									});
 
 								var news = xc.NewValues?.OfType<JObject>()
 									?.Select(xjo => xjo.ToObject<DiscordOverwrite>())
-									?.Select(xo => { xo.Discord = this.Discord; return xo; });
+									?.Select(xo =>
+									{
+										xo.Discord = this.Discord;
+										return xo;
+									});
 
 								entrychn.OverwriteChange = new()
 								{
@@ -413,16 +455,24 @@ public partial class DiscordGuild
 							case "available_tags":
 								var oldTags = xc.OldValues?.OfType<JObject>()
 									?.Select(xjo => xjo.ToObject<ForumPostTag>())
-									?.Select(xo => { xo.Discord = this.Discord; return xo; });
+									?.Select(xo =>
+									{
+										xo.Discord = this.Discord;
+										return xo;
+									});
 
 								var newTags = xc.NewValues?.OfType<JObject>()
 									?.Select(xjo => xjo.ToObject<ForumPostTag>())
-									?.Select(xo => { xo.Discord = this.Discord; return xo; });
+									?.Select(xo =>
+									{
+										xo.Discord = this.Discord;
+										return xo;
+									});
 
 								entrychn.AvailableTagsChange = new()
 								{
-									Before = oldTags != null ? new List<ForumPostTag>(new List<ForumPostTag>(oldTags)) : null,
-									After = newTags != null ? new List<ForumPostTag>(new List<ForumPostTag>(newTags)) : null
+									Before = oldTags != null ? [..new List<ForumPostTag>(oldTags)] : null,
+									After = newTags != null ? [..new List<ForumPostTag>(newTags)] : null
 								};
 								break;
 
@@ -431,7 +481,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in channel update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.OverwriteCreate:
@@ -445,7 +495,6 @@ public partial class DiscordGuild
 
 					var entryovr = entry as DiscordAuditLogOverwriteEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "deny":
@@ -494,13 +543,20 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in overwrite update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.Kick:
 					entry = new DiscordAuditLogKickEntry
 					{
-						Target = amd.TryGetValue(xac.TargetId.Value, out var kickMember) ? kickMember : new() { Id = xac.TargetId.Value, Discord = this.Discord, GuildId = this.Id }
+						Target = amd.TryGetValue(xac.TargetId.Value, out var kickMember)
+							? kickMember
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord,
+								GuildId = this.Id
+							}
 					};
 					break;
 
@@ -516,7 +572,14 @@ public partial class DiscordGuild
 				case AuditLogActionType.Unban:
 					entry = new DiscordAuditLogBanEntry
 					{
-						Target = amd.TryGetValue(xac.TargetId.Value, out var unbanMember) ? unbanMember : new() { Id = xac.TargetId.Value, Discord = this.Discord, GuildId = this.Id }
+						Target = amd.TryGetValue(xac.TargetId.Value, out var unbanMember)
+							? unbanMember
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord,
+								GuildId = this.Id
+							}
 					};
 					break;
 
@@ -524,12 +587,18 @@ public partial class DiscordGuild
 				case AuditLogActionType.MemberRoleUpdate:
 					entry = new DiscordAuditLogMemberUpdateEntry
 					{
-						Target = amd.TryGetValue(xac.TargetId.Value, out var roleUpdMember) ? roleUpdMember : new() { Id = xac.TargetId.Value, Discord = this.Discord, GuildId = this.Id }
+						Target = amd.TryGetValue(xac.TargetId.Value, out var roleUpdMember)
+							? roleUpdMember
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord,
+								GuildId = this.Id
+							}
 					};
 
 					var entrymbu = entry as DiscordAuditLogMemberUpdateEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "nick":
@@ -576,7 +645,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in member update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.RoleCreate:
@@ -584,12 +653,15 @@ public partial class DiscordGuild
 				case AuditLogActionType.RoleUpdate:
 					entry = new DiscordAuditLogRoleUpdateEntry
 					{
-						Target = this.GetRole(xac.TargetId.Value) ?? new DiscordRole { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = this.GetRole(xac.TargetId.Value) ?? new DiscordRole
+						{
+							Id = xac.TargetId.Value,
+							Discord = this.Discord
+						}
 					};
 
 					var entryrol = entry as DiscordAuditLogRoleUpdateEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "name":
@@ -623,7 +695,7 @@ public partial class DiscordGuild
 								entryrol.PositionChange = new()
 								{
 									Before = xc.OldValue != null ? (int?)(long)xc.OldValue : null,
-									After = xc.NewValue != null ? (int?)(long)xc.NewValue : null,
+									After = xc.NewValue != null ? (int?)(long)xc.NewValue : null
 								};
 								break;
 
@@ -656,7 +728,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in role update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.InviteCreate:
@@ -678,7 +750,6 @@ public partial class DiscordGuild
 
 					var entryinv = entry as DiscordAuditLogInviteEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "max_age":
@@ -716,8 +787,22 @@ public partial class DiscordGuild
 
 								entryinv.InviterChange = new()
 								{
-									Before = amd.TryGetValue(t1, out var propBeforeMember) ? propBeforeMember : new() { Id = t1, Discord = this.Discord, GuildId = this.Id },
-									After = amd.TryGetValue(t2, out var propAfterMember) ? propAfterMember : new() { Id = t1, Discord = this.Discord, GuildId = this.Id },
+									Before = amd.TryGetValue(t1, out var propBeforeMember)
+										? propBeforeMember
+										: new()
+										{
+											Id = t1,
+											Discord = this.Discord,
+											GuildId = this.Id
+										},
+									After = amd.TryGetValue(t2, out var propAfterMember)
+										? propAfterMember
+										: new()
+										{
+											Id = t1,
+											Discord = this.Discord,
+											GuildId = this.Id
+										}
 								};
 								break;
 
@@ -727,8 +812,22 @@ public partial class DiscordGuild
 
 								entryinv.ChannelChange = new()
 								{
-									Before = p1 ? this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null,
-									After = p2 ? this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null
+									Before = p1
+										? this.GetChannel(t1) ?? new DiscordChannel
+										{
+											Id = t1,
+											Discord = this.Discord,
+											GuildId = this.Id
+										}
+										: null,
+									After = p2
+										? this.GetChannel(t2) ?? new DiscordChannel
+										{
+											Id = t1,
+											Discord = this.Discord,
+											GuildId = this.Id
+										}
+										: null
 								};
 
 								var ch = entryinv.ChannelChange.Before ?? entryinv.ChannelChange.After;
@@ -765,13 +864,11 @@ public partial class DiscordGuild
 								break;
 
 							// TODO: Add changes for target application
-
 							default:
 								if (this.Discord.Configuration.ReportMissingFields)
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in invite update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
 
 					entryinv.Target = inv;
 					break;
@@ -781,12 +878,17 @@ public partial class DiscordGuild
 				case AuditLogActionType.WebhookUpdate:
 					entry = new DiscordAuditLogWebhookEntry
 					{
-						Target = ahd.TryGetValue(xac.TargetId.Value, out var webhook) ? webhook : new() { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = ahd.TryGetValue(xac.TargetId.Value, out var webhook)
+							? webhook
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord
+							}
 					};
 
 					var entrywhk = entry as DiscordAuditLogWebhookEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "application_id": // ???
@@ -814,8 +916,22 @@ public partial class DiscordGuild
 
 								entrywhk.ChannelChange = new()
 								{
-									Before = p1 ? this.GetChannel(t1) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null,
-									After = p2 ? this.GetChannel(t2) ?? new DiscordChannel { Id = t1, Discord = this.Discord, GuildId = this.Id } : null
+									Before = p1
+										? this.GetChannel(t1) ?? new DiscordChannel
+										{
+											Id = t1,
+											Discord = this.Discord,
+											GuildId = this.Id
+										}
+										: null,
+									After = p2
+										? this.GetChannel(t2) ?? new DiscordChannel
+										{
+											Id = t1,
+											Discord = this.Discord,
+											GuildId = this.Id
+										}
+										: null
 								};
 								break;
 
@@ -843,7 +959,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in webhook update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.EmojiCreate:
@@ -851,12 +967,17 @@ public partial class DiscordGuild
 				case AuditLogActionType.EmojiUpdate:
 					entry = new DiscordAuditLogEmojiEntry
 					{
-						Target = this.EmojisInternal.TryGetValue(xac.TargetId.Value, out var target) ? target : new() { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = this.EmojisInternal.TryGetValue(xac.TargetId.Value, out var target)
+							? target
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord
+							}
 					};
 
 					var entryemo = entry as DiscordAuditLogEmojiEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "name":
@@ -872,7 +993,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in emote update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.StageInstanceCreate:
@@ -880,12 +1001,17 @@ public partial class DiscordGuild
 				case AuditLogActionType.StageInstanceUpdate:
 					entry = new DiscordAuditLogStageEntry
 					{
-						Target = this.StageInstancesInternal.TryGetValue(xac.TargetId.Value, out var stage) ? stage : new() { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = this.StageInstancesInternal.TryGetValue(xac.TargetId.Value, out var stage)
+							? stage
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord
+							}
 					};
 
 					var entrysta = entry as DiscordAuditLogStageEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "topic":
@@ -901,7 +1027,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in stage instance update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.StickerCreate:
@@ -909,12 +1035,17 @@ public partial class DiscordGuild
 				case AuditLogActionType.StickerUpdate:
 					entry = new DiscordAuditLogStickerEntry
 					{
-						Target = this.StickersInternal.TryGetValue(xac.TargetId.Value, out var sticker) ? sticker : new() { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = this.StickersInternal.TryGetValue(xac.TargetId.Value, out var sticker)
+							? sticker
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord
+							}
 					};
 
 					var entrysti = entry as DiscordAuditLogStickerEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "name":
@@ -949,7 +1080,7 @@ public partial class DiscordGuild
 								entrysti.AvailabilityChange = new()
 								{
 									Before = (bool?)xc.OldValue,
-									After = (bool?)xc.NewValue,
+									After = (bool?)xc.NewValue
 								};
 								break;
 							case "asset":
@@ -990,10 +1121,8 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in sticker update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
-
-
 
 				case AuditLogActionType.MessageDelete:
 				case AuditLogActionType.MessageBulkDelete:
@@ -1004,18 +1133,24 @@ public partial class DiscordGuild
 
 					if (xac.Options != null)
 					{
-						entrymsg.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId, Discord = this.Discord, GuildId = this.Id };
+						entrymsg.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel
+						{
+							Id = xac.Options.ChannelId,
+							Discord = this.Discord,
+							GuildId = this.Id
+						};
 						entrymsg.MessageCount = xac.Options.Count;
 					}
 
 					if (entrymsg.Channel != null)
-					{
-						entrymsg.Target = this.Discord is DiscordClient dc
-							&& dc.MessageCache != null
-							&& dc.MessageCache.TryGet(xm => xm.Id == xac.TargetId.Value && xm.ChannelId == entrymsg.Channel.Id, out var msg)
+						entrymsg.Target = this.Discord is DiscordClient { MessageCache: not null } dc
+						                  && dc.MessageCache.TryGet(xm => xm.Id == xac.TargetId.Value && xm.ChannelId == entrymsg.Channel.Id, out var msg)
 							? msg
-							: new() { Discord = this.Discord, Id = xac.TargetId.Value };
-					}
+							: new()
+							{
+								Discord = this.Discord,
+								Id = xac.TargetId.Value
+							};
 					break;
 				}
 
@@ -1027,23 +1162,34 @@ public partial class DiscordGuild
 					var entrypin = entry as DiscordAuditLogMessagePinEntry;
 
 					if (this.Discord is not DiscordClient dc)
-					{
 						break;
-					}
 
 					if (xac.Options != null)
 					{
 						DiscordMessage message = default;
 						dc.MessageCache?.TryGet(x => x.Id == xac.Options.MessageId && x.ChannelId == xac.Options.ChannelId, out message);
 
-						entrypin.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId, Discord = this.Discord, GuildId = this.Id };
-						entrypin.Message = message ?? new DiscordMessage { Id = xac.Options.MessageId, Discord = this.Discord };
+						entrypin.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel
+						{
+							Id = xac.Options.ChannelId,
+							Discord = this.Discord,
+							GuildId = this.Id
+						};
+						entrypin.Message = message ?? new DiscordMessage
+						{
+							Id = xac.Options.MessageId,
+							Discord = this.Discord
+						};
 					}
 
 					if (xac.TargetId.HasValue)
 					{
 						dc.UserCache.TryGetValue(xac.TargetId.Value, out var user);
-						entrypin.Target = user ?? new DiscordUser { Id = user.Id, Discord = this.Discord };
+						entrypin.Target = user ?? new DiscordUser
+						{
+							Id = user.Id,
+							Discord = this.Discord
+						};
 					}
 
 					break;
@@ -1054,12 +1200,14 @@ public partial class DiscordGuild
 					entry = new DiscordAuditLogBotAddEntry();
 
 					if (!(this.Discord is DiscordClient dc && xac.TargetId.HasValue))
-					{
 						break;
-					}
 
 					dc.UserCache.TryGetValue(xac.TargetId.Value, out var bot);
-					(entry as DiscordAuditLogBotAddEntry).TargetBot = bot ?? new DiscordUser { Id = xac.TargetId.Value, Discord = this.Discord };
+					(entry as DiscordAuditLogBotAddEntry).TargetBot = bot ?? new DiscordUser
+					{
+						Id = xac.TargetId.Value,
+						Discord = this.Discord
+					};
 
 					break;
 				}
@@ -1068,14 +1216,17 @@ public partial class DiscordGuild
 					entry = new DiscordAuditLogMemberMoveEntry();
 
 					if (xac.Options == null)
-					{
 						break;
-					}
 
 					var moveentry = entry as DiscordAuditLogMemberMoveEntry;
 
 					moveentry.UserCount = xac.Options.Count;
-					moveentry.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel { Id = xac.Options.ChannelId, Discord = this.Discord, GuildId = this.Id };
+					moveentry.Channel = this.GetChannel(xac.Options.ChannelId) ?? new DiscordChannel
+					{
+						Id = xac.Options.ChannelId,
+						Discord = this.Discord,
+						GuildId = this.Id
+					};
 					break;
 
 				case AuditLogActionType.MemberDisconnect:
@@ -1092,7 +1243,6 @@ public partial class DiscordGuild
 
 					var integentry = entry as DiscordAuditLogIntegrationEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "type":
@@ -1129,7 +1279,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in integration update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				case AuditLogActionType.ThreadCreate:
@@ -1137,12 +1287,17 @@ public partial class DiscordGuild
 				case AuditLogActionType.ThreadUpdate:
 					entry = new DiscordAuditLogThreadEntry
 					{
-						Target = this.ThreadsInternal.TryGetValue(xac.TargetId.Value, out var thread) ? thread : new() { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = this.ThreadsInternal.TryGetValue(xac.TargetId.Value, out var thread)
+							? thread
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord
+							}
 					};
 
 					var entrythr = entry as DiscordAuditLogThreadEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "name":
@@ -1212,21 +1367,25 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in thread update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
-					break;
 
+					break;
 
 				case AuditLogActionType.GuildScheduledEventCreate:
 				case AuditLogActionType.GuildScheduledEventDelete:
 				case AuditLogActionType.GuildScheduledEventUpdate:
 					entry = new DiscordAuditLogGuildScheduledEventEntry
 					{
-						Target = this.ScheduledEventsInternal.TryGetValue(xac.TargetId.Value, out var scheduledEvent) ? scheduledEvent : new() { Id = xac.TargetId.Value, Discord = this.Discord }
+						Target = this.ScheduledEventsInternal.TryGetValue(xac.TargetId.Value, out var scheduledEvent)
+							? scheduledEvent
+							: new()
+							{
+								Id = xac.TargetId.Value,
+								Discord = this.Discord
+							}
 					};
 
 					var entryse = entry as DiscordAuditLogGuildScheduledEventEntry;
 					foreach (var xc in xac.Changes)
-					{
 						switch (xc.Key.ToLowerInvariant())
 						{
 							case "channel_id":
@@ -1288,7 +1447,7 @@ public partial class DiscordGuild
 									this.Discord.Logger.LogWarning(LoggerEvents.AuditLog, "Unknown key in scheduled event update: {Key} - this should be reported to library developers", xc.Key);
 								break;
 						}
-					}
+
 					break;
 
 				// TODO: Handle ApplicationCommandPermissionUpdate
@@ -1333,16 +1492,59 @@ public partial class DiscordGuild
 
 			entry.ActionCategory = xac.ActionType switch
 			{
-				AuditLogActionType.ChannelCreate or AuditLogActionType.EmojiCreate or AuditLogActionType.InviteCreate or AuditLogActionType.OverwriteCreate or AuditLogActionType.RoleCreate or AuditLogActionType.WebhookCreate or AuditLogActionType.IntegrationCreate or AuditLogActionType.StickerCreate or AuditLogActionType.StageInstanceCreate or AuditLogActionType.ThreadCreate or AuditLogActionType.GuildScheduledEventCreate or AuditLogActionType.AutoModerationRuleCreate or AuditLogActionType.OnboardingQuestionCreate or AuditLogActionType.ServerGuideCreate => AuditLogActionCategory.Create,
-				AuditLogActionType.ChannelDelete or AuditLogActionType.EmojiDelete or AuditLogActionType.InviteDelete or AuditLogActionType.MessageDelete or AuditLogActionType.MessageBulkDelete or AuditLogActionType.OverwriteDelete or AuditLogActionType.RoleDelete or AuditLogActionType.WebhookDelete or AuditLogActionType.IntegrationDelete or AuditLogActionType.StickerDelete or AuditLogActionType.StageInstanceDelete or AuditLogActionType.ThreadDelete or AuditLogActionType.GuildScheduledEventDelete or AuditLogActionType.AutoModerationRuleDelete => AuditLogActionCategory.Delete,
-				AuditLogActionType.ChannelUpdate or AuditLogActionType.EmojiUpdate or AuditLogActionType.InviteUpdate or AuditLogActionType.MemberRoleUpdate or AuditLogActionType.MemberUpdate or AuditLogActionType.OverwriteUpdate or AuditLogActionType.RoleUpdate or AuditLogActionType.WebhookUpdate or AuditLogActionType.IntegrationUpdate or AuditLogActionType.StickerUpdate or AuditLogActionType.StageInstanceUpdate or AuditLogActionType.ThreadUpdate or AuditLogActionType.GuildScheduledEventUpdate or AuditLogActionType.AutoModerationRuleUpdate or AuditLogActionType.OnboardingQuestionUpdate or AuditLogActionType.OnboardingUpdate or AuditLogActionType.ServerGuideUpdate or AuditLogActionType.VoiceChannelStatusUpdate => AuditLogActionCategory.Update,
-				_ => AuditLogActionCategory.Other,
+				AuditLogActionType.ChannelCreate
+					or AuditLogActionType.EmojiCreate
+					or AuditLogActionType.InviteCreate
+					or AuditLogActionType.OverwriteCreate
+					or AuditLogActionType.RoleCreate
+					or AuditLogActionType.WebhookCreate
+					or AuditLogActionType.IntegrationCreate
+					or AuditLogActionType.StickerCreate
+					or AuditLogActionType.StageInstanceCreate
+					or AuditLogActionType.ThreadCreate
+					or AuditLogActionType.GuildScheduledEventCreate
+					or AuditLogActionType.AutoModerationRuleCreate
+					or AuditLogActionType.OnboardingQuestionCreate
+					or AuditLogActionType.ServerGuideCreate => AuditLogActionCategory.Create,
+				AuditLogActionType.ChannelDelete
+					or AuditLogActionType.EmojiDelete
+					or AuditLogActionType.InviteDelete
+					or AuditLogActionType.MessageDelete
+					or AuditLogActionType.MessageBulkDelete
+					or AuditLogActionType.OverwriteDelete
+					or AuditLogActionType.RoleDelete
+					or AuditLogActionType.WebhookDelete
+					or AuditLogActionType.IntegrationDelete
+					or AuditLogActionType.StickerDelete
+					or AuditLogActionType.StageInstanceDelete
+					or AuditLogActionType.ThreadDelete
+					or AuditLogActionType.GuildScheduledEventDelete
+					or AuditLogActionType.AutoModerationRuleDelete => AuditLogActionCategory.Delete,
+				AuditLogActionType.ChannelUpdate
+					or AuditLogActionType.EmojiUpdate
+					or AuditLogActionType.InviteUpdate
+					or AuditLogActionType.MemberRoleUpdate
+					or AuditLogActionType.MemberUpdate
+					or AuditLogActionType.OverwriteUpdate
+					or AuditLogActionType.RoleUpdate
+					or AuditLogActionType.WebhookUpdate
+					or AuditLogActionType.IntegrationUpdate
+					or AuditLogActionType.StickerUpdate
+					or AuditLogActionType.StageInstanceUpdate
+					or AuditLogActionType.ThreadUpdate
+					or AuditLogActionType.GuildScheduledEventUpdate
+					or AuditLogActionType.AutoModerationRuleUpdate
+					or AuditLogActionType.OnboardingQuestionUpdate
+					or AuditLogActionType.OnboardingUpdate
+					or AuditLogActionType.ServerGuideUpdate
+					or AuditLogActionType.VoiceChannelStatusUpdate => AuditLogActionCategory.Update,
+				_ => AuditLogActionCategory.Other
 			};
 			entry.Discord = this.Discord;
 			entry.ActionType = xac.ActionType;
 			entry.Id = xac.Id;
 			entry.Reason = xac.Reason;
-			entry.UserResponsible = amd.Any() && amd.TryGetValue(xac.UserId, out var resp) ? resp : this.MembersInternal[xac.UserId];
+			entry.UserResponsible = amd.Count != 0 && amd.TryGetValue(xac.UserId, out var resp) ? resp : this.MembersInternal[xac.UserId];
 			entries.Add(entry);
 		}
 

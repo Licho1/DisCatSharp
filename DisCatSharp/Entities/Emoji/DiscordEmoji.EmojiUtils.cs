@@ -10,20 +10,21 @@ public partial class DiscordEmoji
 	/// <summary>
 	/// Gets a mapping of :name: => unicode.
 	/// </summary>
-	private static IReadOnlyDictionary<string, string> s_unicodeEmojis { get; }
+	private static Dictionary<string, string> s_unicodeEmojis { get; }
 
 	/// <summary>
 	/// Gets a mapping of unicode => :name:.
 	/// </summary>
-	private static IReadOnlyDictionary<string, string> s_discordNameLookup { get; }
+	private static Dictionary<string, string> s_discordNameLookup { get; }
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="DiscordEmoji"/> class.
 	/// </summary>
 	static DiscordEmoji()
 	{
-		#region Generated Emoji Map
-		s_unicodeEmojis = new Dictionary<string, string>
+#region Generated Emoji Map
+
+		s_unicodeEmojis = new()
 		{
 			[":100:"] = "\U0001f4af",
 			[":1234:"] = "\U0001f522",
@@ -6676,10 +6677,10 @@ public partial class DiscordEmoji
 			[":zipper_mouth:"] = "\U0001f910",
 			[":zipper_mouth_face:"] = "\U0001f910",
 			[":zombie:"] = "\U0001f9df",
-			[":zzz:"] = "\U0001f4a4",
+			[":zzz:"] = "\U0001f4a4"
 		};
 
-		s_discordNameLookup = new Dictionary<string, string>
+		s_discordNameLookup = new()
 		{
 			["\U0001f4af"] = ":100:",
 			["\U0001f522"] = ":1234:",
@@ -10119,8 +10120,9 @@ public partial class DiscordEmoji
 			["\u0030\u20e3"] = ":zero:",
 			["\U0001f910"] = ":zipper_mouth:",
 			["\U0001f9df"] = ":zombie:",
-			["\U0001f4a4"] = ":zzz:",
+			["\U0001f4a4"] = ":zzz:"
 		};
-		#endregion
+
+#endregion
 	}
 }

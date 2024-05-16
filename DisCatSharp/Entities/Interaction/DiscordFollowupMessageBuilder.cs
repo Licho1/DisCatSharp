@@ -27,6 +27,7 @@ public sealed class DiscordFollowupMessageBuilder
 			this.FlagsChanged = true;
 		}
 	}
+
 	private bool EPH { get; set; }
 
 	/// <summary>
@@ -41,6 +42,7 @@ public sealed class DiscordFollowupMessageBuilder
 			this.FlagsChanged = true;
 		}
 	}
+
 	private bool EMB_SUP { get; set; }
 
 	/// <summary>
@@ -55,6 +57,7 @@ public sealed class DiscordFollowupMessageBuilder
 			this.FlagsChanged = true;
 		}
 	}
+
 	private bool NOTI_SUP { get; set; }
 
 	/// <summary>
@@ -70,37 +73,45 @@ public sealed class DiscordFollowupMessageBuilder
 		get => this._content;
 		set
 		{
-			if (value != null && value.Length > 2000)
+			if (value is { Length: > 2000 })
 				throw new ArgumentException("Content length cannot exceed 2000 characters.", nameof(value));
+
 			this._content = value;
 		}
 	}
+
 	private string _content;
 
 	/// <summary>
 	/// Embeds to send on followup message.
 	/// </summary>
 	public IReadOnlyList<DiscordEmbed> Embeds => this._embeds;
-	private readonly List<DiscordEmbed> _embeds = new();
+
+	private readonly List<DiscordEmbed> _embeds = [];
 
 	/// <summary>
 	/// Files to send on this followup message.
 	/// </summary>
 	public IReadOnlyList<DiscordMessageFile> Files => this._files;
-	private readonly List<DiscordMessageFile> _files = new();
+
+	private readonly List<DiscordMessageFile> _files = [];
 
 	/// <summary>
 	/// Components to send on this followup message.
 	/// </summary>
 	public IReadOnlyList<DiscordActionRowComponent> Components => this._components;
-	private readonly List<DiscordActionRowComponent> _components = new();
+
+	private readonly List<DiscordActionRowComponent> _components = [];
 
 	/// <summary>
 	/// Mentions to send on this followup message.
 	/// </summary>
-	public IReadOnlyList<IMention> Mentions => this._mentions;
-	private readonly List<IMention> _mentions = new();
+	public List<IMention>? Mentions { get; private set; }
 
+	/// <summary>
+	/// Gets the poll for this message.
+	/// </summary>
+	public DiscordPollBuilder? Poll { get; private set; }
 
 	/// <summary>
 	/// Appends a collection of components to the message.
@@ -147,6 +158,18 @@ public sealed class DiscordFollowupMessageBuilder
 		this._components.Add(arc);
 		return this;
 	}
+
+	/// <summary>
+	/// Adds a poll to this builder.
+	/// </summary>
+	/// <param name="pollBuilder">The poll builder to add.</param>
+	/// <returns>The current builder to be chained.</returns>
+	public DiscordFollowupMessageBuilder WithPoll(DiscordPollBuilder pollBuilder)
+	{
+		this.Poll = pollBuilder;
+		return this;
+	}
+
 	/// <summary>
 	/// Indicates if the followup message must use text-to-speech.
 	/// </summary>
@@ -159,7 +182,7 @@ public sealed class DiscordFollowupMessageBuilder
 	}
 
 	/// <summary>
-	/// Sets the message to send with the followup message..
+	/// Sets the message to send with the followup message.
 	/// </summary>
 	/// <param name="content">Message to send.</param>
 	/// <returns>The builder to chain calls with.</returns>
@@ -260,7 +283,6 @@ public sealed class DiscordFollowupMessageBuilder
 				this._files.Add(new(file.Key, file.Value, null));
 		}
 
-
 		return this;
 	}
 
@@ -271,7 +293,10 @@ public sealed class DiscordFollowupMessageBuilder
 	/// <returns>The builder to chain calls with.</returns>
 	public DiscordFollowupMessageBuilder AddMention(IMention mention)
 	{
-		this._mentions.Add(mention);
+		if (this.Mentions != null)
+			this.Mentions.Add(mention);
+		else
+			this.Mentions = [mention];
 		return this;
 	}
 
@@ -282,7 +307,10 @@ public sealed class DiscordFollowupMessageBuilder
 	/// <returns>The builder to chain calls with.</returns>
 	public DiscordFollowupMessageBuilder AddMentions(IEnumerable<IMention> mentions)
 	{
-		this._mentions.AddRange(mentions);
+		if (this.Mentions != null)
+			this.Mentions.AddRange(mentions);
+		else
+			this.Mentions = mentions.ToList();
 		return this;
 	}
 
@@ -323,14 +351,20 @@ public sealed class DiscordFollowupMessageBuilder
 		=> this._components.Clear();
 
 	/// <summary>
+	/// Clears the poll from this builder.
+	/// </summary>
+	public void ClearPoll()
+		=> this.Poll = null;
+
+	/// <summary>
 	/// Allows for clearing the Followup Message builder so that it can be used again to send a new message.
 	/// </summary>
 	public void Clear()
 	{
-		this.Content = "";
+		this.Content = null;
 		this._embeds.Clear();
 		this.IsTts = false;
-		this._mentions.Clear();
+		this.Mentions = null;
 		this._files.Clear();
 		this.IsEphemeral = false;
 		this._components.Clear();
@@ -341,7 +375,8 @@ public sealed class DiscordFollowupMessageBuilder
 	/// </summary>
 	internal void Validate()
 	{
-		if (this.Files?.Count == 0 && string.IsNullOrEmpty(this.Content) && !this.Embeds.Any() && !this.Components.Any())
-			throw new ArgumentException("You must specify content, an embed, a component, or at least one file.");
+		if (this.Files?.Count == 0 && string.IsNullOrEmpty(this.Content) && !this.Embeds.Any() && !this.Components.Any() && this.Poll is null)
+			throw new ArgumentException("You must specify content, an embed, a component, a poll, or at least one file.");
+		this.Poll?.Validate();
 	}
 }

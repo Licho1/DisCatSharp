@@ -53,7 +53,7 @@ internal sealed class ShardInfoConverter : JsonConverter
 		return new ShardInfo
 		{
 			ShardId = (int)arr[0],
-			ShardCount = (int)arr[1],
+			ShardCount = (int)arr[1]
 		};
 	}
 

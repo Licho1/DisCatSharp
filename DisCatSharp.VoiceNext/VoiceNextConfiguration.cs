@@ -17,7 +17,7 @@ public sealed class VoiceNextConfiguration
 	/// <para>Sets whether incoming voice receiver should be enabled.</para>
 	/// <para>Defaults to false.</para>
 	/// </summary>
-	public bool EnableIncoming { internal get; set; }
+	public bool EnableIncoming { internal get; set; } = false;
 
 	/// <summary>
 	/// <para>Sets the size of the packet queue.</para>
@@ -29,7 +29,8 @@ public sealed class VoiceNextConfiguration
 	/// Creates a new instance of <see cref="VoiceNextConfiguration"/>.
 	/// </summary>
 	[ActivatorUtilitiesConstructor]
-	public VoiceNextConfiguration() { }
+	public VoiceNextConfiguration()
+	{ }
 
 	/// <summary>
 	/// Creates a new instance of <see cref="VoiceNextConfiguration"/>, copying the properties of another configuration.
@@ -37,7 +38,8 @@ public sealed class VoiceNextConfiguration
 	/// <param name="other">Configuration the properties of which are to be copied.</param>
 	public VoiceNextConfiguration(VoiceNextConfiguration other)
 	{
-		this.AudioFormat = new AudioFormat(other.AudioFormat.SampleRate, other.AudioFormat.ChannelCount, other.AudioFormat.VoiceApplication);
+		this.AudioFormat = new(other.AudioFormat.SampleRate, other.AudioFormat.ChannelCount, other.AudioFormat.VoiceApplication);
 		this.EnableIncoming = other.EnableIncoming;
+		this.PacketQueueSize = other.PacketQueueSize;
 	}
 }

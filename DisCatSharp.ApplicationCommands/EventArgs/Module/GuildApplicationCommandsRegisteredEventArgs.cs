@@ -9,7 +9,7 @@ namespace DisCatSharp.ApplicationCommands.EventArgs;
 /// <summary>
 /// Represents arguments for a <see cref="ApplicationCommandsExtension.GuildApplicationCommandsRegistered"/> event.
 /// </summary>
-public class GuildApplicationCommandsRegisteredEventArgs : DiscordEventArgs
+public sealed class GuildApplicationCommandsRegisteredEventArgs : DiscordEventArgs
 {
 	/// <summary>
 	/// Gets the target guild id.
@@ -19,12 +19,13 @@ public class GuildApplicationCommandsRegisteredEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Gets all registered guild commands.
 	/// </summary>
-	public IReadOnlyList<DiscordApplicationCommand> RegisteredCommands { get; internal set; }
+	public IReadOnlyList<DiscordApplicationCommand> RegisteredCommands { get; internal set; } = [];
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="GuildApplicationCommandsRegisteredEventArgs"/> class.
 	/// </summary>
 	/// <param name="provider">The provider.</param>
-	internal GuildApplicationCommandsRegisteredEventArgs(IServiceProvider provider) : base(provider)
+	internal GuildApplicationCommandsRegisteredEventArgs(IServiceProvider provider)
+		: base(provider)
 	{ }
 }

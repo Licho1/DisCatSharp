@@ -25,7 +25,9 @@ public class CommandGroup : Command
 	/// <summary>
 	/// Initializes a new instance of the <see cref="CommandGroup"/> class.
 	/// </summary>
-	internal CommandGroup() : base() { }
+	internal CommandGroup()
+		: base()
+	{ }
 
 	/// <summary>
 	/// Executes this command or its subcommand with specified context.
@@ -35,13 +37,13 @@ public class CommandGroup : Command
 	public override async Task<CommandResult> ExecuteAsync(CommandContext ctx)
 	{
 		var findPos = 0;
-		var cn = CommandsNextUtilities.ExtractNextArgument(ctx.RawArgumentString, ref findPos);
+		var cn = ctx.RawArgumentString.ExtractNextArgument(ref findPos);
 
 		if (cn != null)
 		{
 			var cmd = ctx.Config.CaseSensitive
 				? this.Children.FirstOrDefault(xc => xc.Name == cn || (xc.Aliases != null && xc.Aliases.Contains(cn)))
-				: this.Children.FirstOrDefault(xc => xc.Name.ToLowerInvariant() == cn.ToLowerInvariant() || (xc.Aliases != null && xc.Aliases.Select(xs => xs.ToLowerInvariant()).Contains(cn.ToLowerInvariant())));
+				: this.Children.FirstOrDefault(xc => string.Equals(xc.Name, cn, StringComparison.InvariantCultureIgnoreCase) || (xc.Aliases != null && xc.Aliases.Select(xs => xs.ToLowerInvariant()).Contains(cn.ToLowerInvariant())));
 			if (cmd != null)
 			{
 				// pass the execution on
@@ -54,12 +56,16 @@ public class CommandGroup : Command
 					RawArgumentString = ctx.RawArgumentString[findPos..],
 					Prefix = ctx.Prefix,
 					CommandsNext = ctx.CommandsNext,
-					Services = ctx.Services
+					Services = ctx.Services,
+					UserId = ctx.Message.Author.Id,
+					GuildId = ctx.Message.GuildId,
+					MemberId = ctx.Message.GuildId is not null ? ctx.Message.Author.Id : null,
+					ChannelId = ctx.Message.ChannelId
 				};
 
 				var fchecks = await cmd.RunChecksAsync(xctx, false).ConfigureAwait(false);
 				return fchecks.Any()
-					? new CommandResult
+					? new()
 					{
 						IsSuccessful = false,
 						Exception = new ChecksFailedException(cmd, xctx, fchecks),
@@ -70,7 +76,7 @@ public class CommandGroup : Command
 		}
 
 		return !this.IsExecutableWithoutSubcommands
-			? new CommandResult
+			? new()
 			{
 				IsSuccessful = false,
 				Exception = new InvalidOperationException("No matching subcommands were found, and this group is not executable."),

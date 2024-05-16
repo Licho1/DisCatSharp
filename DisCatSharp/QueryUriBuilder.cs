@@ -18,7 +18,11 @@ internal class QueryUriBuilder
 	/// Gets the query parameters.
 	/// </summary>
 	public IReadOnlyList<KeyValuePair<string, string>> QueryParameters => this._queryParams;
-	private readonly List<KeyValuePair<string, string>> _queryParams = new();
+
+	/// <summary>
+	/// Gets the query parameters.
+	/// </summary>
+	private readonly List<KeyValuePair<string, string>> _queryParams = [];
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="QueryUriBuilder"/> class.
@@ -26,8 +30,7 @@ internal class QueryUriBuilder
 	/// <param name="uri">The uri.</param>
 	public QueryUriBuilder(string uri)
 	{
-		if (uri == null)
-			throw new ArgumentNullException(nameof(uri));
+		ArgumentNullException.ThrowIfNull(uri);
 
 		this.SourceUri = new(uri);
 	}
@@ -38,8 +41,7 @@ internal class QueryUriBuilder
 	/// <param name="uri">The uri.</param>
 	public QueryUriBuilder(Uri uri)
 	{
-		if (uri == null)
-			throw new ArgumentNullException(nameof(uri));
+		ArgumentNullException.ThrowIfNull(uri);
 
 		this.SourceUri = uri;
 	}
@@ -61,7 +63,7 @@ internal class QueryUriBuilder
 	public Uri Build() =>
 		new UriBuilder(this.SourceUri)
 		{
-			Query = string.Join("&", this._queryParams.Select(e => Uri.EscapeDataString(e.Key) + '=' + Uri.EscapeDataString(e.Value)))
+			Query = this._queryParams.Count is not 0 ? string.Join("&", this._queryParams.Select(e => Uri.EscapeDataString(e.Key) + '=' + Uri.EscapeDataString(e.Value))) : string.Empty
 		}.Uri;
 
 	/// <summary>

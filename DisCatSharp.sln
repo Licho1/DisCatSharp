@@ -14,7 +14,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		BUILDING.md = BUILDING.md
 		CONTRIBUTING.md = CONTRIBUTING.md
-		Directory.Build.props = Directory.Build.props
 		LICENSE.md = LICENSE.md
 		README.md = README.md
 	EndProjectSection
@@ -47,11 +46,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.ApplicationComm
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Configuration", "DisCatSharp.Configuration\DisCatSharp.Configuration.csproj", "{603287D3-1EF2-47F1-A611-C7F25869DE14}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Configuration.Tests", "DisCatSharp.Configuration.Tests\DisCatSharp.Configuration.Tests.csproj", "{E15E88B4-63AD-42DE-B685-D31697C62194}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Configuration.Tests", "DisCatSharp.Tests\DisCatSharp.Configuration.Tests\DisCatSharp.Configuration.Tests.csproj", "{E15E88B4-63AD-42DE-B685-D31697C62194}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Hosting", "DisCatSharp.Hosting\DisCatSharp.Hosting.csproj", "{72CCE5D5-926B-432A-876A-065FA2BC9B7B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Hosting.Tests", "DisCatSharp.Hosting.Tests\DisCatSharp.Hosting.Tests.csproj", "{D02B598A-F0C9-4A8C-B8DE-7C0BAC8C9B94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Hosting.Tests", "DisCatSharp.Tests\DisCatSharp.Hosting.Tests\DisCatSharp.Hosting.Tests.csproj", "{D02B598A-F0C9-4A8C-B8DE-7C0BAC8C9B94}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Hosting.DependencyInjection", "DisCatSharp.Hosting.DependencyInjection\DisCatSharp.Hosting.DependencyInjection.csproj", "{2D67D1DD-E5B2-40C7-80E2-54D63730E7F0}"
 EndProject
@@ -60,11 +59,15 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{D911BF2D-523E-4504-935D-AEDA353305D8}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\build.yml = .github\workflows\build.yml
-		.github\workflows\codeql.yml = .github\workflows\codeql.yml
+		.github\workflows\codeql-analysis.yml = .github\workflows\codeql-analysis.yml
+		.github\workflows\create_diagram.yml = .github\workflows\create_diagram.yml
 		.github\workflows\documentation.yml = .github\workflows\documentation.yml
 		.github\workflows\documentation_test.yml = .github\workflows\documentation_test.yml
+		.github\workflows\internal-release.yml = .github\workflows\internal-release.yml
 		.github\workflows\labeler.yml = .github\workflows\labeler.yml
+		.github\workflows\public-dev-release.yml = .github\workflows\public-dev-release.yml
 		.github\workflows\release.yml = .github\workflows\release.yml
+		.github\workflows\sentry.yml = .github\workflows\sentry.yml
 		.github\workflows\tweet.yml = .github\workflows\tweet.yml
 	EndProjectSection
 EndProject
@@ -75,6 +78,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Targets", "Targets", "{4A7E
 		DisCatSharp.Targets\Library.targets = DisCatSharp.Targets\Library.targets
 		DisCatSharp.Targets\NuGet.targets = DisCatSharp.Targets\NuGet.targets
 		DisCatSharp.Targets\Package.targets = DisCatSharp.Targets\Package.targets
+		DisCatSharp.Targets\TestProject.targets = DisCatSharp.Targets\TestProject.targets
 		DisCatSharp.Targets\Version.targets = DisCatSharp.Targets\Version.targets
 	EndProjectSection
 EndProject
@@ -85,13 +89,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{11D25C98
 		DisCatSharp.Tools\rebuild-lib.ps1 = DisCatSharp.Tools\rebuild-lib.ps1
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.EventHandlers.Tests", "DisCatSharp.EventHandlers.Tests\DisCatSharp.EventHandlers.Tests.csproj", "{BE646FCD-8A56-46DC-978D-AC1E0A892A9F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.EventHandlers.Tests", "DisCatSharp.Tests\DisCatSharp.EventHandlers.Tests\DisCatSharp.EventHandlers.Tests.csproj", "{BE646FCD-8A56-46DC-978D-AC1E0A892A9F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{267EFBFF-ECD2-4686-A5DE-5B642F8A7CCB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.SafetyTests", "DisCatSharp.Tests\SafetyTests\DisCatSharp.SafetyTests.csproj", "{9F012C5C-6A47-4E5D-8819-5D2DD0743E65}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.Lavalink", "DisCatSharp.Lavalink\DisCatSharp.Lavalink.csproj", "{1ADC1D06-3DB8-4741-B740-13161B40CBA3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DisCatSharp.ApplicationCommands.Tests", "DisCatSharp.Tests\DisCatSharp.ApplicationCommands.Tests\DisCatSharp.ApplicationCommands.Tests.csproj", "{B4837A35-F5D1-4CF0-941B-961407E3CC36}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -163,6 +169,10 @@ Global
 		{1ADC1D06-3DB8-4741-B740-13161B40CBA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1ADC1D06-3DB8-4741-B740-13161B40CBA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1ADC1D06-3DB8-4741-B740-13161B40CBA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4837A35-F5D1-4CF0-941B-961407E3CC36}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4837A35-F5D1-4CF0-941B-961407E3CC36}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4837A35-F5D1-4CF0-941B-961407E3CC36}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4837A35-F5D1-4CF0-941B-961407E3CC36}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -175,6 +185,7 @@ Global
 		{11D25C98-6D11-412C-8016-BE070315326F} = {84464D70-687B-40A8-836D-C4F737698969}
 		{BE646FCD-8A56-46DC-978D-AC1E0A892A9F} = {267EFBFF-ECD2-4686-A5DE-5B642F8A7CCB}
 		{9F012C5C-6A47-4E5D-8819-5D2DD0743E65} = {267EFBFF-ECD2-4686-A5DE-5B642F8A7CCB}
+		{B4837A35-F5D1-4CF0-941B-961407E3CC36} = {267EFBFF-ECD2-4686-A5DE-5B642F8A7CCB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {23F3A981-51B8-4285-A38C-3267F1D25FE7}

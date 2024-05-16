@@ -21,9 +21,11 @@ public class ApplicationCommandEditModel : ObservableApiObject
 		{
 			if (value.Value.Length > 32)
 				throw new ArgumentException("Application command name cannot exceed 32 characters.", nameof(value));
+
 			this._name = value;
 		}
 	}
+
 	private Optional<string> _name;
 
 	/// <summary>
@@ -36,9 +38,11 @@ public class ApplicationCommandEditModel : ObservableApiObject
 		{
 			if (value.Value.Length > 100)
 				throw new ArgumentException("Application command description cannot exceed 100 characters.", nameof(value));
+
 			this._description = value;
 		}
 	}
+
 	private Optional<string> _description;
 
 	/// <summary>
@@ -64,7 +68,7 @@ public class ApplicationCommandEditModel : ObservableApiObject
 	/// <summary>
 	/// Sets the command's allowed contexts.
 	/// </summary>
-	public Optional<List<ApplicationCommandContexts>?> AllowedContexts { internal get; set; }
+	public Optional<List<InteractionContextType>?> AllowedContexts { internal get; set; }
 
 	/// <summary>
 	/// Sets the command's allowed integration types.

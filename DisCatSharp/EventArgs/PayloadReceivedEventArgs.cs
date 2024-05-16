@@ -23,6 +23,7 @@ public class PayloadReceivedEventArgs : DiscordEventArgs
 	}
 
 	private string _json;
+
 	/// <summary>
 	/// Gets or sets the payload object.
 	/// </summary>
@@ -36,5 +37,7 @@ public class PayloadReceivedEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Initializes a new instance of the <see cref="PayloadReceivedEventArgs"/> class.
 	/// </summary>
-	internal PayloadReceivedEventArgs(IServiceProvider provider) : base(provider) { }
+	internal PayloadReceivedEventArgs(IServiceProvider provider)
+		: base(provider)
+	{ }
 }

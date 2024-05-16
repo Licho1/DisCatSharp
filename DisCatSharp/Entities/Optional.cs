@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -38,30 +39,11 @@ public static class Optional
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	/// <param name="value"></param>
-	/// <returns></returns>
-	public static Optional<T> FromNullable<T>(T value)
+	[MemberNotNull]
+	public static Optional<T?> FromNullable<T>([AllowNull] T? value)
 		=> value == null
 			? None
 			: value;
-
-	/// <summary>
-	/// Creates a new <see cref="Optional{T}"/> with specified value and valid state.
-	/// </summary>
-	/// <param name="value">Value to populate the optional with.</param>
-	/// <typeparam name="T">Type of the value.</typeparam>
-	/// <returns>Created optional.</returns>
-	[Obsolete("Renamed to Some.")]
-	public static Optional<T> FromValue<T>(T value)
-		=> value;
-
-	/// <summary>
-	/// Creates a new empty <see cref="Optional{T}"/> with no value and invalid state.
-	/// </summary>
-	/// <typeparam name="T">The type that the created instance is wrapping around.</typeparam>
-	/// <returns>Created optional.</returns>
-	[Obsolete("Use None.")]
-	public static Optional<T> FromNoValue<T>()
-		=> default;
 }
 
 /// <summary>
@@ -73,7 +55,7 @@ public struct None
 /// <summary>
 /// Used internally to make serialization more convenient, do NOT change this, do NOT implement this yourself.
 /// </summary>
-internal interface IOptional
+public interface IOptional
 {
 	/// <summary>
 	/// Gets a whether it has a value.
@@ -123,16 +105,11 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>, IOp
 	/// Creates a new <see cref="Optional{T}"/> with specified value.
 	/// </summary>
 	/// <param name="value">Value of this option.</param>
-	[Obsolete("Use Optional.Some")]
 	public Optional(T value)
 	{
 		this._val = value;
 		this.HasValue = true;
 	}
-
-	[Obsolete("Renamed to Map")]
-	public Optional<TOut> IfPresent<TOut>(Func<T, TOut> mapper)
-		=> this.Map(mapper);
 
 	/// <summary>
 	/// Performs a mapping operation on the current <see cref="Optional{T}"/>, turning it into an Optional holding a
@@ -222,7 +199,7 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>, IOp
 		{
 			T t => this.Equals(t),
 			Optional<T> opt => this.Equals(opt),
-			_ => false,
+			_ => false
 		};
 
 	/// <summary>
@@ -248,9 +225,7 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>, IOp
 		=> this.Map(x => x.GetHashCode()).ValueOrDefault();
 
 	public static implicit operator Optional<T>(T val)
-#pragma warning disable 0618
 		=> new(val);
-#pragma warning restore 0618
 
 	public static explicit operator T(Optional<T> opt)
 		=> opt.Value;
@@ -339,17 +314,13 @@ internal sealed class OptionalJsonConverter : JsonConverter
 		var val = (value as IOptional).RawValue;
 		// JToken.FromObject will throw if `null` so we manually write a null value.
 		if (val == null)
-		{
 			// you can read serializer.NullValueHandling here, but unfortunately you can **not** skip serialization
 			// here, or else you will get a nasty JsonWriterException, so we just ignore its value and manually
 			// write the null.
 			writer.WriteToken(JsonToken.Null);
-		}
 		else
-		{
 			// convert the value to a JSON object and write it to the property value.
 			JToken.FromObject(val).WriteTo(writer);
-		}
 	}
 
 	/// <summary>
@@ -359,15 +330,19 @@ internal sealed class OptionalJsonConverter : JsonConverter
 	/// <param name="objectType">The object type.</param>
 	/// <param name="existingValue">The existing value.</param>
 	/// <param name="serializer">The serializer.</param>
-	public override object ReadJson(JsonReader reader, Type objectType, object existingValue,
-		JsonSerializer serializer)
+	public override object ReadJson(
+		JsonReader reader,
+		Type objectType,
+		object existingValue,
+		JsonSerializer serializer
+	)
 	{
 		var genericType = objectType.GenericTypeArguments[0];
 
 		var constructor = objectType.GetTypeInfo().DeclaredConstructors
 			.FirstOrDefault(e => e.GetParameters()[0].ParameterType == genericType);
 
-		return constructor.Invoke(new[] { serializer.Deserialize(reader, genericType) });
+		return constructor.Invoke([serializer.Deserialize(reader, genericType)]);
 	}
 
 	/// <summary>

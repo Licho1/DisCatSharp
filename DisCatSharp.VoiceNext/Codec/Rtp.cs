@@ -6,7 +6,8 @@ namespace DisCatSharp.VoiceNext.Codec;
 /// <summary>
 /// The rtp.
 /// </summary>
-internal sealed class Rtp : IDisposable
+// ReSharper disable once ClassCanBeSealed.Global - This class can be used by other projects.
+internal class Rtp : IDisposable
 {
 	/// <summary>
 	/// The header size.
@@ -17,10 +18,12 @@ internal sealed class Rtp : IDisposable
 	/// The rtp no extension.
 	/// </summary>
 	private const byte RTP_NO_EXTENSION = 0x80;
+
 	/// <summary>
 	/// The rtp extension.
 	/// </summary>
 	private const byte RTP_EXTENSION = 0x90;
+
 	/// <summary>
 	/// The rtp version.
 	/// </summary>
@@ -48,9 +51,9 @@ internal sealed class Rtp : IDisposable
 		target[1] = RTP_VERSION;
 
 		// Write data big endian
-		BinaryPrimitives.WriteUInt16BigEndian(target[2..], sequence);  // header + magic
+		BinaryPrimitives.WriteUInt16BigEndian(target[2..], sequence); // header + magic
 		BinaryPrimitives.WriteUInt32BigEndian(target[4..], timestamp); // header + magic + sizeof(sequence)
-		BinaryPrimitives.WriteUInt32BigEndian(target[8..], ssrc);      // header + magic + sizeof(sequence) + sizeof(timestamp)
+		BinaryPrimitives.WriteUInt32BigEndian(target[8..], ssrc); // header + magic + sizeof(sequence) + sizeof(timestamp)
 	}
 
 	/// <summary>
@@ -58,7 +61,8 @@ internal sealed class Rtp : IDisposable
 	/// </summary>
 	/// <param name="source">The source.</param>
 	/// <returns>A bool.</returns>
-	public bool IsRtpHeader(ReadOnlySpan<byte> source) => source.Length >= HEADER_SIZE && (source[0] == RTP_NO_EXTENSION || source[0] == RTP_EXTENSION) && source[1] == RTP_VERSION;
+	public bool IsRtpHeader(ReadOnlySpan<byte> source)
+		=> source.Length >= HEADER_SIZE && (source[0] is RTP_NO_EXTENSION || source[0] is RTP_EXTENSION) && source[1] is RTP_VERSION;
 
 	/// <summary>
 	/// Decodes the header.
@@ -73,10 +77,10 @@ internal sealed class Rtp : IDisposable
 		if (source.Length < HEADER_SIZE)
 			throw new ArgumentException("Header buffer is too short.", nameof(source));
 
-		if ((source[0] != RTP_NO_EXTENSION && source[0] != RTP_EXTENSION) || source[1] != RTP_VERSION)
+		if ((source[0] is not RTP_NO_EXTENSION && source[0] is not RTP_EXTENSION) || source[1] is not RTP_VERSION)
 			throw new ArgumentException("Invalid RTP header.", nameof(source));
 
-		hasExtension = source[0] == RTP_EXTENSION;
+		hasExtension = source[0] is RTP_EXTENSION;
 
 		// Read data big endian
 		sequence = BinaryPrimitives.ReadUInt16BigEndian(source[2..]);
@@ -96,7 +100,7 @@ internal sealed class Rtp : IDisposable
 			EncryptionMode.XSalsa20Poly1305 => HEADER_SIZE + encryptedLength,
 			EncryptionMode.XSalsa20Poly1305Suffix => HEADER_SIZE + encryptedLength + Interop.SodiumNonceSize,
 			EncryptionMode.XSalsa20Poly1305Lite => HEADER_SIZE + encryptedLength + 4,
-			_ => throw new ArgumentException("Unsupported encryption mode.", nameof(encryptionMode)),
+			_ => throw new ArgumentException("Unsupported encryption mode.", nameof(encryptionMode))
 		};
 
 	/// <summary>
@@ -130,7 +134,5 @@ internal sealed class Rtp : IDisposable
 	/// Disposes the Rtp.
 	/// </summary>
 	public void Dispose()
-	{
-
-	}
+	{ }
 }

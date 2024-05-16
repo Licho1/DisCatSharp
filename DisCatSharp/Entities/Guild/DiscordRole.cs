@@ -139,7 +139,7 @@ public class DiscordRole : SnowflakeObject, IEquatable<DiscordRole>
 	/// </summary>
 	[JsonIgnore]
 	public string Mention
-		=> Formatter.Mention(this);
+		=> this.Mention();
 
 	/// <summary>
 	/// Gets a list of members that have this role. Requires ServerMembers Intent.
@@ -148,7 +148,7 @@ public class DiscordRole : SnowflakeObject, IEquatable<DiscordRole>
 	public IReadOnlyList<KeyValuePair<ulong, DiscordMember>> Members
 		=> this.Guild.Members.Where(x => x.Value.RoleIds.Any(x => x == this.Id)).ToList();
 
-	#region Methods
+#region Methods
 
 	/// <summary>
 	/// Modifies this role's position.
@@ -168,7 +168,9 @@ public class DiscordRole : SnowflakeObject, IEquatable<DiscordRole>
 				RoleId = x.Id,
 				Position = x.Id == this.Id
 					? position
-					: x.Position <= position ? x.Position - 1 : x.Position
+					: x.Position <= position
+						? x.Position - 1
+						: x.Position
 			});
 
 		return this.Discord.ApiClient.ModifyGuildRolePositionAsync(this.GuildId, roles, reason);
@@ -204,17 +206,16 @@ public class DiscordRole : SnowflakeObject, IEquatable<DiscordRole>
 		action(mdl);
 
 		var canContinue = true;
-		if ((mdl.Icon.HasValue && mdl.Icon.Value != null) || (mdl.UnicodeEmoji.HasValue && mdl.UnicodeEmoji.Value != null))
+		if (mdl.Icon is { HasValue: true, Value: not null } || (mdl.UnicodeEmoji.HasValue && mdl.UnicodeEmoji.Value != null))
 			canContinue = this.Guild.Features.HasFeature(GuildFeaturesEnum.CanSetRoleIcons);
 
 		var iconb64 = Optional.FromNullable<string>(null);
-		if (mdl.Icon.HasValue && mdl.Icon.Value != null)
-			iconb64 = ImageTool.Base64FromStream(mdl.Icon);
-		else if (mdl.Icon.HasValue)
-			iconb64 = Optional.Some<string?>(null);
-		else
-			iconb64 = Optional.None;
-
+		iconb64 = mdl.Icon.HasValue switch
+		{
+			true when mdl.Icon.Value != null => ImageTool.Base64FromStream(mdl.Icon),
+			true => Optional.Some<string?>(null),
+			_ => Optional.None
+		};
 		var emoji = Optional.FromNullable<string?>(null);
 
 		switch (mdl.UnicodeEmoji.HasValue)
@@ -248,7 +249,7 @@ public class DiscordRole : SnowflakeObject, IEquatable<DiscordRole>
 	public Task DeleteAsync(string reason = null)
 		=> this.Discord.ApiClient.DeleteRoleAsync(this.GuildId, this.Id, reason);
 
-	#endregion
+#endregion
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="DiscordRole"/> class.
@@ -306,7 +307,7 @@ public class DiscordRole : SnowflakeObject, IEquatable<DiscordRole>
 	/// <returns>Whether the two roles are equal.</returns>
 	public static bool operator ==(DiscordRole e1, DiscordRole e2)
 		=> e1 is null == e2 is null
-		&& ((e1 is null && e2 is null) || e1.Id == e2.Id);
+		   && ((e1 is null && e2 is null) || e1.Id == e2.Id);
 
 	/// <summary>
 	/// Gets whether the two <see cref="DiscordRole"/> objects are not equal.

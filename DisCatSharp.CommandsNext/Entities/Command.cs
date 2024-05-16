@@ -67,7 +67,8 @@ public class Command
 	/// <summary>
 	/// Initializes a new instance of the <see cref="Command"/> class.
 	/// </summary>
-	internal Command() { }
+	internal Command()
+	{ }
 
 	/// <summary>
 	/// Executes this command with specified context.
@@ -98,7 +99,7 @@ public class Command
 				var ret = (Task)ovl.Callable.DynamicInvoke(args.Converted);
 				await ret.ConfigureAwait(false);
 				executed = true;
-				res = new CommandResult
+				res = new()
 				{
 					IsSuccessful = true,
 					Context = ctx
@@ -114,7 +115,7 @@ public class Command
 		}
 		catch (Exception ex)
 		{
-			res = new CommandResult
+			res = new()
 			{
 				IsSuccessful = false,
 				Exception = ex,
@@ -190,7 +191,7 @@ public class Command
 			return true;
 
 		return obj is Command cmd
-&& cmd.QualifiedName == this.QualifiedName;
+		       && cmd.QualifiedName == this.QualifiedName;
 	}
 
 	/// <summary>

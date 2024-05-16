@@ -23,7 +23,7 @@ public class GuildFeatures
 	/// <param name="guild">Guild to check</param>
 	public GuildFeatures(DiscordGuild guild)
 	{
-		this.Features = new();
+		this.Features = [];
 
 		if (guild.RawFeatures.Contains("APPLICATION_COMMAND_PERMISSIONS_V2")) this.Features.Add(GuildFeaturesEnum.UsesApplicationCommandsPermissionsV2);
 		if (guild.RawFeatures.Contains("RAID_ALERTS_ENABLED")) this.Features.Add(GuildFeaturesEnum.RaidAlertsEnabled);
@@ -149,6 +149,7 @@ public class GuildFeatures
 	{
 		if (string.IsNullOrWhiteSpace(text))
 			return "";
+
 		var newText = new StringBuilder(text.Length * 2);
 		newText.Append(text[0]);
 		for (var i = 1; i < text.Length; i++)
@@ -157,6 +158,7 @@ public class GuildFeatures
 				newText.Append(' ');
 			newText.Append(text[i]);
 		}
+
 		return newText.ToString();
 	}
 }
@@ -640,5 +642,5 @@ public enum GuildFeaturesEnum
 
 	RaidAlertsEnabled,
 
-	UsesApplicationCommandsPermissionsV2,
+	UsesApplicationCommandsPermissionsV2
 }

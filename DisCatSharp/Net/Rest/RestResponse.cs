@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Net;
 
 namespace DisCatSharp.Net;
 
@@ -10,12 +11,12 @@ public sealed class RestResponse
 	/// <summary>
 	/// Gets the response code sent by the remote party.
 	/// </summary>
-	public int ResponseCode { get; internal set; }
+	public HttpStatusCode ResponseCode { get; internal set; }
 
 	/// <summary>
 	/// Gets the headers sent by the remote party.
 	/// </summary>
-	public IReadOnlyDictionary<string, string> Headers { get; internal set; }
+	public IReadOnlyDictionary<string, string>? Headers { get; internal set; }
 
 	/// <summary>
 	/// Gets the contents of the response sent by the remote party.
@@ -25,5 +26,6 @@ public sealed class RestResponse
 	/// <summary>
 	/// Initializes a new instance of the <see cref="RestResponse"/> class.
 	/// </summary>
-	internal RestResponse() { }
+	internal RestResponse()
+	{ }
 }

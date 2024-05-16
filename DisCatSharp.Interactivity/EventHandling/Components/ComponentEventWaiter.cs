@@ -19,8 +19,8 @@ namespace DisCatSharp.Interactivity.EventHandling;
 internal class ComponentEventWaiter : IDisposable
 {
 	private readonly DiscordClient _client;
-	private readonly ConcurrentHashSet<ComponentMatchRequest> _matchRequests = new();
-	private readonly ConcurrentHashSet<ComponentCollectRequest> _collectRequests = new();
+	private readonly ConcurrentHashSet<ComponentMatchRequest> _matchRequests = [];
+	private readonly ConcurrentHashSet<ComponentCollectRequest> _collectRequests = [];
 
 	private readonly DiscordFollowupMessageBuilder _message;
 	private readonly InteractivityConfiguration _config;
@@ -36,7 +36,11 @@ internal class ComponentEventWaiter : IDisposable
 		this._client.ComponentInteractionCreated += this.Handle;
 		this._config = config;
 
-		this._message = new DiscordFollowupMessageBuilder { Content = config.ResponseMessage ?? "This message was not meant for you.", IsEphemeral = true };
+		this._message = new()
+		{
+			Content = config.ResponseMessage ?? "This message was not meant for you.",
+			IsEphemeral = true
+		};
 	}
 
 	/// <summary>
@@ -95,17 +99,13 @@ internal class ComponentEventWaiter : IDisposable
 	private async Task Handle(DiscordClient _, ComponentInteractionCreateEventArgs args)
 	{
 		foreach (var mreq in this._matchRequests)
-		{
 			if (mreq.Message == args.Message && mreq.IsMatch(args))
 				mreq.Tcs.TrySetResult(args);
 
 			else if (this._config.ResponseBehavior is InteractionResponseBehavior.Respond)
 				await args.Interaction.CreateFollowupMessageAsync(this._message).ConfigureAwait(false);
-		}
-
 
 		foreach (var creq in this._collectRequests)
-		{
 			if (creq.Message == args.Message && creq.IsMatch(args))
 			{
 				await args.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate).ConfigureAwait(false);
@@ -116,8 +116,8 @@ internal class ComponentEventWaiter : IDisposable
 				else if (this._config.ResponseBehavior is InteractionResponseBehavior.Respond)
 					await args.Interaction.CreateFollowupMessageAsync(this._message).ConfigureAwait(false);
 			}
-		}
 	}
+
 	/// <summary>
 	/// Disposes the waiter.
 	/// </summary>

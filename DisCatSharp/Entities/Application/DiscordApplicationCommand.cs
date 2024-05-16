@@ -36,33 +36,33 @@ public class DiscordApplicationCommand : SnowflakeObject, IEquatable<DiscordAppl
 	/// Sets the name localizations.
 	/// </summary>
 	[JsonProperty("name_localizations", NullValueHandling = NullValueHandling.Ignore)]
-	internal Dictionary<string, string> RawNameLocalizations { get; set; }
+	internal Dictionary<string, string>? RawNameLocalizations { get; set; }
 
 	/// <summary>
 	/// Gets the name localizations.
 	/// </summary>
 	[JsonIgnore]
-	public DiscordApplicationCommandLocalization NameLocalizations
-		=> new(this.RawNameLocalizations);
+	public DiscordApplicationCommandLocalization? NameLocalizations
+		=> this.RawNameLocalizations != null ? new(this.RawNameLocalizations) : null;
 
 	/// <summary>
 	/// Gets the description of this command.
 	/// </summary>
-	[JsonProperty("description")]
-	public string Description { get; internal set; }
+	[JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+	public string? Description { get; internal set; }
 
 	/// <summary>
 	/// Sets the description localizations.
 	/// </summary>
 	[JsonProperty("description_localizations", NullValueHandling = NullValueHandling.Ignore)]
-	internal Dictionary<string, string> RawDescriptionLocalizations { get; set; }
+	internal Dictionary<string, string>? RawDescriptionLocalizations { get; set; }
 
 	/// <summary>
 	/// Gets the description localizations.
 	/// </summary>
 	[JsonIgnore]
-	public DiscordApplicationCommandLocalization DescriptionLocalizations
-		=> new(this.RawDescriptionLocalizations);
+	public DiscordApplicationCommandLocalization? DescriptionLocalizations
+		=> this.RawDescriptionLocalizations != null ? new(this.RawDescriptionLocalizations) : null;
 
 	/// <summary>
 	/// Gets the potential parameters for this command.
@@ -86,7 +86,7 @@ public class DiscordApplicationCommand : SnowflakeObject, IEquatable<DiscordAppl
 	/// Gets where the application command can be used.
 	/// </summary>
 	[JsonProperty("contexts", NullValueHandling = NullValueHandling.Ignore), DiscordUnreleased]
-	public List<ApplicationCommandContexts>? AllowedContexts { get; internal set; }
+	public List<InteractionContextType>? AllowedContexts { get; internal set; }
 
 	/// <summary>
 	/// Gets the application command allowed integration types.
@@ -110,7 +110,8 @@ public class DiscordApplicationCommand : SnowflakeObject, IEquatable<DiscordAppl
 	/// Gets the mention for this command.
 	/// </summary>
 	[JsonIgnore]
-	public string Mention => this.Type == ApplicationCommandType.ChatInput ? $"</{this.Name}:{this.Id}>" : this.Name;
+	public string Mention
+		=> this.Type == ApplicationCommandType.ChatInput ? $"</{this.Name}:{this.Id}>" : this.Name;
 
 	/// <summary>
 	/// Creates a new instance of a <see cref="DiscordApplicationCommand"/>.
@@ -127,21 +128,27 @@ public class DiscordApplicationCommand : SnowflakeObject, IEquatable<DiscordAppl
 	/// <param name="allowedContexts">Where the command can be used.</param>
 	/// <param name="integrationTypes">The allowed integration types.</param>
 	public DiscordApplicationCommand(
-		string name, string description,
+		string name,
+		string? description,
 		IEnumerable<DiscordApplicationCommandOption>? options = null,
 		ApplicationCommandType type = ApplicationCommandType.ChatInput,
-		DiscordApplicationCommandLocalization? nameLocalizations = null, DiscordApplicationCommandLocalization? descriptionLocalizations = null,
-		Permissions? defaultMemberPermissions = null, bool? dmPermission = null, bool isNsfw = false,
-		List<ApplicationCommandContexts>? allowedContexts = null, List<ApplicationCommandIntegrationTypes>? integrationTypes = null)
-		: base(new() { "guild_id" })
+		DiscordApplicationCommandLocalization? nameLocalizations = null,
+		DiscordApplicationCommandLocalization? descriptionLocalizations = null,
+		Permissions? defaultMemberPermissions = null,
+		bool? dmPermission = null,
+		bool isNsfw = false,
+		List<InteractionContextType>? allowedContexts = null,
+		List<ApplicationCommandIntegrationTypes>? integrationTypes = null
+	)
+		: base(["guild_id", "name_localizations", "description_localizations"])
 	{
 		if (type is ApplicationCommandType.ChatInput)
 		{
 			if (!Utilities.IsValidSlashCommandName(name))
 				throw new ArgumentException("Invalid slash command name specified. It must be below 32 characters and not contain any whitespace.", nameof(name));
-			if (name.Any(ch => char.IsUpper(ch)))
+			if (name.Any(char.IsUpper))
 				throw new ArgumentException("Slash command name cannot have any upper case characters.", nameof(name));
-			if (description.Length > 100)
+			if (description?.Length > 100)
 				throw new ArgumentException("Slash command description cannot exceed 100 characters.", nameof(description));
 			if (string.IsNullOrWhiteSpace(description))
 				throw new ArgumentException("Slash commands need a description.", nameof(description));
@@ -155,6 +162,7 @@ public class DiscordApplicationCommand : SnowflakeObject, IEquatable<DiscordAppl
 				throw new ArgumentException("Context menus do not support descriptions.");
 			if (options?.Any() ?? false)
 				throw new ArgumentException("Context menus do not support options.");
+
 			description = string.Empty;
 
 			this.RawNameLocalizations = nameLocalizations?.GetKeyValuePairs();
@@ -177,7 +185,7 @@ public class DiscordApplicationCommand : SnowflakeObject, IEquatable<DiscordAppl
 	/// Creates a new empty Discord Application Command.
 	/// </summary>
 	internal DiscordApplicationCommand()
-		: base(new() { "name_localizations", "description_localizations" }) // Why tf is that so inconsistent?!
+		: base(["name_localizations", "description_localizations", "guild_id"]) // Why tf is that so inconsistent?!
 	{ }
 
 	/// <summary>

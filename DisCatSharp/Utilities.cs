@@ -1,19 +1,37 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 
-using DisCatSharp.Attributes;
+using DisCatSharp.Common;
+using DisCatSharp.Common.RegularExpressions;
 using DisCatSharp.Entities;
 using DisCatSharp.Enums;
 using DisCatSharp.Net;
 
 using Microsoft.Extensions.Logging;
+
+using NuGet.Common;
+using NuGet.Packaging;
+using NuGet.Protocol;
+using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
+
+using Octokit;
+using Octokit.Internal;
+
+using ILogger = Microsoft.Extensions.Logging.ILogger;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using Repository = NuGet.Protocol.Core.Types.Repository;
 
 namespace DisCatSharp;
 
@@ -43,7 +61,7 @@ public static class Utilities
 	/// </summary>
 	static Utilities()
 	{
-		PermissionStrings = new();
+		PermissionStrings = [];
 		var t = typeof(Permissions);
 		var ti = t.GetTypeInfo();
 		var vals = Enum.GetValues(t).Cast<Permissions>();
@@ -70,6 +88,23 @@ public static class Utilities
 		}
 
 		VersionHeader = $"DiscordBot (https://github.com/Aiko-IT-Systems/DisCatSharp, v{vs})";
+	}
+
+	/// <summary>
+	/// Adds the specified parameter to the Query String.
+	/// </summary>
+	/// <param name="url"></param>
+	/// <param name="paramName">Name of the parameter to add.</param>
+	/// <param name="paramValue">Value for the parameter to add.</param>
+	/// <returns>Url with added parameter.</returns>
+	public static Uri AddParameter(this Uri url, string paramName, string paramValue)
+	{
+		var uriBuilder = new UriBuilder(url);
+		var query = HttpUtility.ParseQueryString(uriBuilder.Query);
+		query[paramName] = paramValue;
+		uriBuilder.Query = query.ToString();
+
+		return uriBuilder.Uri;
 	}
 
 	/// <summary>
@@ -131,9 +166,9 @@ public static class Utilities
 	internal static string GetFormattedToken(DiscordConfiguration config)
 		=> config.TokenType switch
 		{
-			TokenType.Bearer => $"Bearer {config.Token}",
-			TokenType.Bot => $"Bot {config.Token}",
-			_ => throw new ArgumentException("Invalid token type specified.", nameof(config)),
+			TokenType.Bearer => $"{CommonHeaders.AUTHORIZATION_BEARER} {config.Token}",
+			TokenType.Bot => $"{CommonHeaders.AUTHORIZATION_BOT} {config.Token}",
+			_ => throw new ArgumentException("Invalid token type specified.", nameof(config))
 		};
 
 	/// <summary>
@@ -141,7 +176,7 @@ public static class Utilities
 	/// </summary>
 	/// <returns>A Dictionary.</returns>
 	internal static Dictionary<string, string> GetBaseHeaders()
-		=> new();
+		=> [];
 
 	/// <summary>
 	/// Gets the user agent.
@@ -156,11 +191,7 @@ public static class Utilities
 	/// <param name="message">The message.</param>
 	/// <returns>A bool.</returns>
 	internal static bool ContainsUserMentions(string message)
-	{
-		var pattern = @"<@(\d+)>";
-		var regex = new Regex(pattern, RegexOptions.ECMAScript);
-		return regex.IsMatch(message);
-	}
+		=> DiscordRegEx.UserWithoutNicknameRegex().IsMatch(message);
 
 	/// <summary>
 	/// Contains the nickname mentions.
@@ -168,11 +199,7 @@ public static class Utilities
 	/// <param name="message">The message.</param>
 	/// <returns>A bool.</returns>
 	internal static bool ContainsNicknameMentions(string message)
-	{
-		var pattern = @"<@!(\d+)>";
-		var regex = new Regex(pattern, RegexOptions.ECMAScript);
-		return regex.IsMatch(message);
-	}
+		=> DiscordRegEx.UserWithNicknameRegex().IsMatch(message);
 
 	/// <summary>
 	/// Contains the channel mentions.
@@ -180,11 +207,7 @@ public static class Utilities
 	/// <param name="message">The message.</param>
 	/// <returns>A bool.</returns>
 	internal static bool ContainsChannelMentions(string message)
-	{
-		var pattern = @"<#(\d+)>";
-		var regex = new Regex(pattern, RegexOptions.ECMAScript);
-		return regex.IsMatch(message);
-	}
+		=> DiscordRegEx.ChannelRegex().IsMatch(message);
 
 	/// <summary>
 	/// Contains the role mentions.
@@ -192,11 +215,7 @@ public static class Utilities
 	/// <param name="message">The message.</param>
 	/// <returns>A bool.</returns>
 	internal static bool ContainsRoleMentions(string message)
-	{
-		var pattern = @"<@&(\d+)>";
-		var regex = new Regex(pattern, RegexOptions.ECMAScript);
-		return regex.IsMatch(message);
-	}
+		=> DiscordRegEx.RoleRegex().IsMatch(message);
 
 	/// <summary>
 	/// Contains the emojis.
@@ -204,11 +223,7 @@ public static class Utilities
 	/// <param name="message">The message.</param>
 	/// <returns>A bool.</returns>
 	internal static bool ContainsEmojis(string message)
-	{
-		var pattern = @"<a?:(.*):(\d+)>";
-		var regex = new Regex(pattern, RegexOptions.ECMAScript);
-		return regex.IsMatch(message);
-	}
+		=> DiscordRegEx.EmojiRegex().IsMatch(message);
 
 	/// <summary>
 	/// Gets the user mentions.
@@ -217,10 +232,9 @@ public static class Utilities
 	/// <returns>A list of ulong.</returns>
 	internal static IEnumerable<ulong> GetUserMentions(DiscordMessage message)
 	{
-		var regex = new Regex(@"<@!?(\d+)>", RegexOptions.ECMAScript | RegexOptions.Compiled);
-		var matches = regex.Matches(message.Content);
+		var matches = DiscordRegEx.UserWithOptionalNicknameRegex().Matches(message.Content);
 		return from Match match in matches
-			   select ulong.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+		       select ulong.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
 	}
 
 	/// <summary>
@@ -230,10 +244,9 @@ public static class Utilities
 	/// <returns>A list of ulong.</returns>
 	internal static IEnumerable<ulong> GetRoleMentions(DiscordMessage message)
 	{
-		var regex = new Regex(@"<@&(\d+)>", RegexOptions.ECMAScript);
-		var matches = regex.Matches(message.Content);
+		var matches = DiscordRegEx.RoleRegex().Matches(message.Content);
 		return from Match match in matches
-			   select ulong.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+		       select ulong.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
 	}
 
 	/// <summary>
@@ -243,10 +256,9 @@ public static class Utilities
 	/// <returns>A list of ulong.</returns>
 	internal static IEnumerable<ulong> GetChannelMentions(DiscordMessage message)
 	{
-		var regex = new Regex(@"<#(\d+)>", RegexOptions.ECMAScript);
-		var matches = regex.Matches(message.Content);
+		var matches = DiscordRegEx.ChannelRegex().Matches(message.Content);
 		return from Match match in matches
-			   select ulong.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+		       select ulong.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
 	}
 
 	/// <summary>
@@ -256,10 +268,9 @@ public static class Utilities
 	/// <returns>A list of ulong.</returns>
 	internal static IEnumerable<ulong> GetEmojis(DiscordMessage message)
 	{
-		var regex = new Regex(@"<a?:([a-zA-Z0-9_]+):(\d+)>", RegexOptions.ECMAScript);
-		var matches = regex.Matches(message.Content);
+		var matches = DiscordRegEx.EmojiRegex().Matches(message.Content);
 		return from Match match in matches
-			   select ulong.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+		       select ulong.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
 	}
 
 	/// <summary>
@@ -268,31 +279,7 @@ public static class Utilities
 	/// <param name="name">The name.</param>
 	/// <returns>A bool.</returns>
 	internal static bool IsValidSlashCommandName(string name)
-	{
-		var regex = new Regex(@"^[\w-]{1,32}$");
-		return regex.IsMatch(name);
-	}
-
-	/// <summary>
-	/// Checks the thread auto archive duration feature.
-	/// </summary>
-	/// <param name="guild">The guild.</param>
-	/// <param name="taad">The taad.</param>
-	/// <returns>A bool.</returns>
-	[DiscordDeprecated, Deprecated]
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
-	internal static bool CheckThreadAutoArchiveDurationFeature(DiscordGuild guild, ThreadAutoArchiveDuration taad)
-		=> true;
-
-	/// <summary>
-	/// Checks the thread private feature.
-	/// </summary>
-	/// <param name="guild">The guild.</param>
-	/// <returns>A bool.</returns>
-	[DiscordDeprecated, Deprecated]
-	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
-	internal static bool CheckThreadPrivateFeature(DiscordGuild guild)
-		=> true;
+		=> DiscordRegEx.ApplicationCommandNameRegex().IsMatch(name);
 
 	/// <summary>
 	/// Have the message intents.
@@ -404,7 +391,6 @@ public static class Utilities
 	public static DateTimeOffset? GetSnowflakeTime(this ulong? snowflake)
 		=> snowflake is not null ? DiscordClient.DiscordEpoch.AddMilliseconds(snowflake.Value >> 22) : null;
 
-
 	/// <summary>
 	/// Converts this <see cref="Permissions"/> into human-readable format.
 	/// </summary>
@@ -448,15 +434,15 @@ public static class Utilities
 	/// <param name="level">The level.</param>
 	/// <param name="eventId">The event id.</param>
 	/// <param name="message">The message.</param>
-	internal static void LogTaskFault(this Task task, ILogger logger, LogLevel level, EventId eventId, string message)
+	/// <param name="args">An object array that contains zero or more objects to format.</param>
+	internal static void LogTaskFault(this Task task, ILogger? logger, LogLevel level, EventId eventId, string? message, params object?[] args)
 	{
-		if (task == null)
-			throw new ArgumentNullException(nameof(task));
+		ArgumentNullException.ThrowIfNull(task);
 
 		if (logger == null)
 			return;
 
-		task.ContinueWith(t => logger.Log(level, eventId, t.Exception, message), TaskContinuationOptions.OnlyOnFaulted);
+		task.ContinueWith(t => logger.Log(level, eventId, t.Exception, message, args), TaskContinuationOptions.OnlyOnFaulted);
 	}
 
 	/// <summary>
@@ -469,5 +455,239 @@ public static class Utilities
 	{
 		key = kvp.Key;
 		value = kvp.Value;
+	}
+
+	/// <summary>
+	/// Gets whether the github version check has finished for given product.
+	/// </summary>
+	private static ConcurrentDictionary<string, bool> s_gitHubVersionCheckFinishedFor { get; } = [];
+
+	/// <summary>
+	/// Gets whether the nuget version check has finished for given product.
+	/// </summary>
+	private static ConcurrentDictionary<string, bool> s_nuGetVersionCheckFinishedFor { get; } = [];
+
+	/// <summary>
+	/// Perfoms a version check against github releases.
+	/// </summary>
+	/// <param name="client">The base discord client.</param>
+	/// <param name="owner">The owner of the target github <paramref name="repository"/>.</param>
+	/// <param name="repository">The target github repository.</param>
+	/// <param name="productName">The name of the product.</param>
+	/// <param name="includePrerelease">Whether to include pre-releases in the check.</param>
+	/// <param name="manualVersion">The manual version string to check.</param>
+	/// <param name="githubToken">The token to use for private repositories.</param>
+	public static Task CheckGitHubVersionAsync(DiscordClient client, string owner = "Aiko-IT-Systems", string repository = "DisCatSharp", string productName = "DisCatSharp", bool includePrerelease = true, string? manualVersion = null, string? githubToken = null)
+		=> CheckGitHubVersionAsync(client, false, false, owner, repository, productName, manualVersion, githubToken, includePrerelease);
+
+	/// <summary>
+	/// Performs a version check against nuget.
+	/// </summary>
+	/// <param name="client">The base discord client.</param>
+	/// <param name="packageId">The id of the package.</param>
+	/// <param name="includePrerelease">Whether to include pre-releases in the check.</param>
+	/// <param name="manualVersion">The manual version string to check.</param>
+	public static Task CheckNuGetVersionAsync(DiscordClient client, string packageId = "DisCatSharp", bool includePrerelease = true, string? manualVersion = null)
+		=> CheckNuGetVersionAsync(client, false, false, packageId, includePrerelease, manualVersion);
+
+	/// <summary>
+	/// Perfoms a version check against github releases.
+	/// </summary>
+	/// <param name="client">The base discord client.</param>
+	/// <param name="startupCheck">Whether this is called on startup.</param>
+	/// <param name="fromShard">Whether this method got called from a sharded client.</param>
+	/// <param name="owner">The owner of the target github <paramref name="repository"/>.</param>
+	/// <param name="repository">The target github repository.</param>
+	/// <param name="productNameOrPackageId">The name of the product or package id, depending on <paramref name="checkMode"/>.</param>
+	/// <param name="manualVersion">The manual version string to check.</param>
+	/// <param name="githubToken">The token to use for private repositories.</param>
+	/// <param name="checkMode">Which check mode to use. Can be either <see cref="VersionCheckMode.GitHub"/> or <see cref="VersionCheckMode.NuGet"/>. Defaults to <see cref="VersionCheckMode.NuGet"/></param>
+	/// <param name="includePrerelease">Whether to include pre-releases in the check.</param>
+	internal static Task CheckVersionAsync(BaseDiscordClient client, bool startupCheck, bool fromShard = false, string owner = "Aiko-IT-Systems", string repository = "DisCatSharp", string productNameOrPackageId = "DisCatSharp", string? manualVersion = null, string? githubToken = null, bool includePrerelease = true, VersionCheckMode checkMode = VersionCheckMode.NuGet)
+		=> checkMode is VersionCheckMode.GitHub ? CheckGitHubVersionAsync(client, startupCheck, fromShard, owner, repository, productNameOrPackageId, manualVersion, githubToken, includePrerelease) : CheckNuGetVersionAsync(client, startupCheck, fromShard, productNameOrPackageId, includePrerelease, manualVersion);
+
+	/// <summary>
+	/// Perfoms a version check against github releases.
+	/// </summary>
+	/// <param name="client">The base discord client.</param>
+	/// <param name="startupCheck">Whether this is called on startup.</param>
+	/// <param name="fromShard">Whether this method got called from a sharded client.</param>
+	/// <param name="owner">The owner of the target github <paramref name="repository"/>.</param>
+	/// <param name="repository">The target github repository.</param>
+	/// <param name="productName">The name of the product.</param>
+	/// <param name="manualVersion">The manual version string to check.</param>
+	/// <param name="githubToken">The token to use for private repositories.</param>
+	/// <param name="includePrerelease">Whether to include pre-releases in the check.</param>
+	private static async Task CheckGitHubVersionAsync(BaseDiscordClient client, bool startupCheck, bool fromShard = false, string owner = "Aiko-IT-Systems", string repository = "DisCatSharp", string productName = "DisCatSharp", string? manualVersion = null, string? githubToken = null, bool includePrerelease = true)
+	{
+		if (startupCheck && s_gitHubVersionCheckFinishedFor.TryGetValue(productName, out var val) && val)
+			return;
+
+		try
+		{
+			var version = manualVersion ?? client.VersionString;
+			var currentVersion = version.Split('-')[0]!.Split('+')[0]!;
+			var splitVersion = currentVersion.Split('.');
+			var api = Convert.ToInt32(splitVersion[0]);
+			var major = Convert.ToInt32(splitVersion[1]);
+			var minor = Convert.ToInt32(splitVersion[2]);
+
+			ApiConnection apiConnection = githubToken is not null ? new(new Connection(new($"{client.BotLibrary}", client.VersionString), new InMemoryCredentialStore(new(githubToken)))) : new(new Connection(new($"{client.BotLibrary}", client.VersionString)));
+			ReleasesClient releaseClient = new(apiConnection);
+			var latest = includePrerelease
+				? (await releaseClient.GetAll(owner, repository, new()
+				{
+					PageCount = 1,
+					PageSize = 1
+				})).ToList().FirstOrDefault()
+				: await releaseClient.GetLatest(owner, repository);
+
+			if (latest is null)
+			{
+				client.Logger.LogWarning("[{Type}] Failed to check for updates. Could not determine remote version", fromShard ? "ShardedClient" : "Client");
+				return;
+			}
+
+			string? releaseNotes = null;
+			if (client.Configuration.ShowReleaseNotesInUpdateCheck)
+			{
+				var assetUrl = latest.Assets.FirstOrDefault(x => x.Name is "RELEASENOTES.md")?.BrowserDownloadUrl;
+				if (assetUrl is not null)
+					try
+					{
+						GitHubClient gitHubClient = new(apiConnection.Connection);
+						var response = await gitHubClient.Connection.GetRawStream(new(assetUrl), new Dictionary<string, string>()
+						{
+							{ "Accept", "application/octet-stream " }
+						});
+						releaseNotes = await response.Body.GenerateStringFromStream();
+					}
+					catch
+					{
+						releaseNotes = null;
+					}
+			}
+
+			var lastGitHubRelease = latest.TagName.Replace("v", string.Empty, StringComparison.InvariantCultureIgnoreCase);
+			var githubSplitVersion = lastGitHubRelease.Split('.');
+			var githubApi = Convert.ToInt32(githubSplitVersion[0]);
+			var githubMajor = Convert.ToInt32(githubSplitVersion[1]);
+			var githubMinor = Convert.ToInt32(githubSplitVersion[2]);
+
+			if (api < githubApi || (api == githubApi && major < githubMajor) || (api == githubApi && major == githubMajor && minor < githubMinor))
+				client.Logger.LogCritical("[{Type}] Your version of {Product} is outdated!\n\tCurrent version: v{CurrentVersion}\n\tLatest version: v{LastGitHubRelease}", fromShard ? "ShardedClient" : "Client", productName, version, lastGitHubRelease);
+			else if (githubApi < api || (githubApi == api && githubMajor < major) || (githubApi == api && githubMajor == major && githubMinor < minor))
+				client.Logger.LogWarning("[{Type}] Your version of {Product} is newer than the latest release!\n\tPre-releases are not recommended for production.\n\tCurrent version: v{CurrentVersion}\n\tLatest version: v{LastGitHubRelease}", fromShard ? "ShardedClient" : "Client", productName, version, lastGitHubRelease);
+			else
+				client.Logger.LogInformation("[{Type}] Your version of {Product} is up to date!\n\tCurrent version: v{CurrentVersion}", fromShard ? "ShardedClient" : "Client", productName, version);
+
+			if (client.Configuration.ShowReleaseNotesInUpdateCheck)
+			{
+				if (!string.IsNullOrEmpty(releaseNotes))
+					client.Logger.LogInformation("Release Notes:\n{ReleaseNotes}", releaseNotes);
+				else
+					client.Logger.LogWarning("Could not find any release notes");
+			}
+			else
+				client.Logger.LogInformation("Release notes disabled by config");
+		}
+		catch (Exception ex)
+		{
+			client.Logger.LogWarning("[{Type}] Failed to check for updates for {Product}. Error: {Exception}", fromShard ? "ShardedClient" : "Client", productName, ex);
+		}
+		finally
+		{
+			if (startupCheck)
+				if (!s_gitHubVersionCheckFinishedFor.TryAdd(productName, true) && s_gitHubVersionCheckFinishedFor.TryGetValue(productName, out _))
+					s_gitHubVersionCheckFinishedFor[productName] = true;
+		}
+	}
+
+	/// <summary>
+	/// Performs a version check against nuget.
+	/// </summary>
+	/// <param name="client">The base discord client.</param>
+	/// <param name="startupCheck">Whether this is called on startup.</param>
+	/// <param name="fromShard">Whether this method got called from a sharded client.</param>
+	/// <param name="packageId">The id of the package.</param>
+	/// <param name="includePrerelease">Whether to include pre-releases in the check.</param>
+	/// <param name="manualVersion">The manual version string to check.</param>
+	/// <returns></returns>
+	private static async Task CheckNuGetVersionAsync(BaseDiscordClient client, bool startupCheck, bool fromShard = false, string packageId = "DisCatSharp", bool includePrerelease = true, string? manualVersion = null)
+	{
+		if (startupCheck && s_nuGetVersionCheckFinishedFor.TryGetValue(packageId, out var val) && val)
+			return;
+
+		try
+		{
+			var repository = Repository.Factory.GetCoreV3("https://api.nuget.org/v3/index.json");
+			var resource = await repository.GetResourceAsync<MetadataResource>();
+			var sourceCache = new SourceCacheContext()
+			{
+				RefreshMemoryCache = true,
+				IgnoreFailedSources = true,
+				NoCache = true
+			};
+			var latestVersions = (await resource.GetLatestVersions(new List<string>()
+			{
+				packageId.ToLowerInvariant()
+			}, includePrerelease, false, sourceCache, new NullLogger(), CancellationToken.None))?.ToList();
+
+			if (latestVersions is null)
+			{
+				client.Logger.LogWarning("[{Type}] Failed to check for updates. Could not determine remote version", fromShard ? "ShardedClient" : "Client");
+				return;
+			}
+
+			var latestPackageVersion = latestVersions.First(x => string.Equals(x.Key, packageId, StringComparison.InvariantCultureIgnoreCase)).Value;
+			string? releaseNotes = null;
+			if (client.Configuration.ShowReleaseNotesInUpdateCheck)
+			{
+				var dResource = await repository.GetResourceAsync<FindPackageByIdResource>();
+
+				await using var packageStream = new MemoryStream();
+				await dResource.CopyNupkgToStreamAsync(
+					packageId,
+					latestPackageVersion,
+					packageStream,
+					sourceCache,
+					new NullLogger(),
+					CancellationToken.None);
+				using var packageReader = new PackageArchiveReader(packageStream);
+				var nuspecReader = await packageReader.GetNuspecReaderAsync(CancellationToken.None);
+				releaseNotes = nuspecReader.GetReleaseNotes();
+			}
+
+			var version = manualVersion ?? client.VersionString;
+			var gitLessVersion = version.Split('+')[0];
+
+			NuGetVersion currentPackageVersion = new(gitLessVersion);
+			if (latestPackageVersion > currentPackageVersion)
+				client.Logger.LogCritical("[{Type}] Your version of {Product} is outdated!\n\tCurrent version: v{CurrentVersion}\n\tLatest version: v{LastGitHubRelease}", fromShard ? "ShardedClient" : "Client", packageId, currentPackageVersion.OriginalVersion, latestPackageVersion.OriginalVersion);
+			else if (latestPackageVersion < currentPackageVersion)
+				client.Logger.LogWarning("[{Type}] Your version of {Product} is newer than the latest release!\n\tPre-releases are not recommended for production.\n\tCurrent version: v{CurrentVersion}\n\tLatest version: v{LastGitHubRelease}", fromShard ? "ShardedClient" : "Client", packageId, currentPackageVersion.OriginalVersion, latestPackageVersion.OriginalVersion);
+			else
+				client.Logger.LogInformation("[{Type}] Your version of {Product} is up to date!\n\tCurrent version: v{CurrentVersion}", fromShard ? "ShardedClient" : "Client", packageId, currentPackageVersion.OriginalVersion);
+
+			if (client.Configuration.ShowReleaseNotesInUpdateCheck)
+			{
+				if (!string.IsNullOrEmpty(releaseNotes))
+					client.Logger.LogInformation("Release Notes:\n{ReleaseNotes}", releaseNotes);
+				else
+					client.Logger.LogWarning("Could not find any release notes");
+			}
+			else
+				client.Logger.LogInformation("Release notes disabled by config");
+		}
+		catch (Exception ex)
+		{
+			client.Logger.LogWarning("[{Type}] Failed to check for updates for {Product}. Error: {Exception}", fromShard ? "ShardedClient" : "Client", packageId, ex);
+		}
+		finally
+		{
+			if (startupCheck)
+				if (!s_nuGetVersionCheckFinishedFor.TryAdd(packageId, true) && s_nuGetVersionCheckFinishedFor.TryGetValue(packageId, out _))
+					s_nuGetVersionCheckFinishedFor[packageId] = true;
+		}
 	}
 }

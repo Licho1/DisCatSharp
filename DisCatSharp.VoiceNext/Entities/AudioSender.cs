@@ -20,7 +20,7 @@ internal class AudioSender : IDisposable
 	{
 		Normal,
 		AssumeNextLowSequenceIsOverflow,
-		AssumeNextHighSequenceIsOutOfOrder,
+		AssumeNextHighSequenceIsOutOfOrder
 	}
 
 	/// <summary>
@@ -41,7 +41,7 @@ internal class AudioSender : IDisposable
 	/// <summary>
 	/// Gets or sets the user.
 	/// </summary>
-	public DiscordUser User { get; set; } = null;
+	public DiscordUser? User { get; set; } = null;
 
 	/// <summary>
 	/// Gets or sets the last sequence.
@@ -62,8 +62,8 @@ internal class AudioSender : IDisposable
 	/// <summary>
 	/// Disposes .
 	/// </summary>
-	public void Dispose() => this.Decoder?.Dispose();
-
+	public void Dispose()
+		=> this.Decoder?.Dispose();
 
 	/// <summary>
 	/// Accepts the 16-bit sequence number from the next RTP header in the associated stream and
@@ -96,7 +96,6 @@ internal class AudioSender : IDisposable
 		// minute or so of when they should be, the 64-bit sequence numbers coming out of this
 		// method will be perfectly consistent with reality.
 		const ushort OVERFLOW_BUFFER_ZONE = 3_000;
-		const ushort LOW_THRESHOLD = OVERFLOW_BUFFER_ZONE;
 		const ushort HIGH_THRESHOLD = ushort.MaxValue - OVERFLOW_BUFFER_ZONE;
 
 		ulong wrappingAdjustment = 0;
@@ -109,7 +108,7 @@ internal class AudioSender : IDisposable
 				this._currentSequenceWrapState = SequenceWrapState.AssumeNextLowSequenceIsOverflow;
 				break;
 
-			case SequenceWrapState.AssumeNextLowSequenceIsOverflow when originalSequence < LOW_THRESHOLD:
+			case SequenceWrapState.AssumeNextLowSequenceIsOverflow when originalSequence < OVERFLOW_BUFFER_ZONE:
 				// we had seen some sequence numbers that got a bit high, and now we see this
 				// sequence number that's WAY lower than before.  this is a classic sign that
 				// the sequence numbers have wrapped around.  in order to present a consistently
@@ -131,13 +130,15 @@ internal class AudioSender : IDisposable
 				wrappingAdjustment = 1 << 16;
 				break;
 
-			case SequenceWrapState.AssumeNextHighSequenceIsOutOfOrder when originalSequence > LOW_THRESHOLD:
+			case SequenceWrapState.AssumeNextHighSequenceIsOutOfOrder when originalSequence > OVERFLOW_BUFFER_ZONE:
 				// EITHER we're at the very beginning of the stream OR very close to the time
 				// when we saw some very low sequence numbers.  either way, we're out of the
 				// zones where we should consider very low sequence numbers to come AFTER very
 				// high ones, so we can go back to normal now.
 				this._currentSequenceWrapState = SequenceWrapState.Normal;
 				break;
+			default:
+				throw new ArgumentOutOfRangeException(null, "CurrentSequenceWrapState was out of range");
 		}
 
 		return this._sequenceBase + originalSequence - wrappingAdjustment;

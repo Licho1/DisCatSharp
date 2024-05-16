@@ -1,11 +1,9 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using DisCatSharp.Common;
 using DisCatSharp.Common.RegularExpressions;
 using DisCatSharp.Common.Utilities;
 using DisCatSharp.Entities;
@@ -34,6 +32,7 @@ public sealed class LavalinkGuildPlayer
 		add => this._voiceStateUpdated.Register(value);
 		remove => this._voiceStateUpdated.Unregister(value);
 	}
+
 	private readonly AsyncEvent<DiscordClient, VoiceStateUpdateEventArgs> _voiceStateUpdated;
 
 	/// <summary>
@@ -44,6 +43,7 @@ public sealed class LavalinkGuildPlayer
 		add => this.TrackStartedEvent.Register(value);
 		remove => this.TrackStartedEvent.Unregister(value);
 	}
+
 	internal readonly AsyncEvent<LavalinkGuildPlayer, LavalinkTrackStartedEventArgs> TrackStartedEvent;
 
 	/// <summary>
@@ -54,6 +54,7 @@ public sealed class LavalinkGuildPlayer
 		add => this.TrackEndedEvent.Register(value);
 		remove => this.TrackEndedEvent.Unregister(value);
 	}
+
 	internal readonly AsyncEvent<LavalinkGuildPlayer, LavalinkTrackEndedEventArgs> TrackEndedEvent;
 
 	/// <summary>
@@ -64,6 +65,7 @@ public sealed class LavalinkGuildPlayer
 		add => this.TrackExceptionEvent.Register(value);
 		remove => this.TrackExceptionEvent.Unregister(value);
 	}
+
 	internal readonly AsyncEvent<LavalinkGuildPlayer, LavalinkTrackExceptionEventArgs> TrackExceptionEvent;
 
 	/// <summary>
@@ -74,6 +76,7 @@ public sealed class LavalinkGuildPlayer
 		add => this.TrackStuckEvent.Register(value);
 		remove => this.TrackStuckEvent.Unregister(value);
 	}
+
 	internal readonly AsyncEvent<LavalinkGuildPlayer, LavalinkTrackStuckEventArgs> TrackStuckEvent;
 
 	/// <summary>
@@ -84,6 +87,7 @@ public sealed class LavalinkGuildPlayer
 		add => this.StateUpdatedEvent.Register(value);
 		remove => this.StateUpdatedEvent.Unregister(value);
 	}
+
 	internal readonly AsyncEvent<LavalinkGuildPlayer, LavalinkPlayerStateUpdateEventArgs> StateUpdatedEvent;
 
 	/// <summary>
@@ -116,7 +120,9 @@ public sealed class LavalinkGuildPlayer
 	/// Gets the guild this player is attached to.
 	/// </summary>
 	public DiscordGuild Guild
-		=> this.Discord.Guilds.TryGetValue(this.GuildId, out var guild) ? guild : null!;
+		=> this.Discord.Guilds.TryGetValue(this.GuildId, out var guild)
+			? guild
+			: null!;
 
 	/// <summary>
 	/// Gets the discord client.
@@ -163,17 +169,18 @@ public sealed class LavalinkGuildPlayer
 	/// Gets the internal queue entries.
 	/// </summary>
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "<Pending>")]
-	private SortedList<string, IQueueEntry> _queueEntriesInternal = new();
+	private SortedList<string, IQueueEntry> _queueEntriesInternal = [];
 
 	/// <summary>
 	/// Gets a list of current user in the <see cref="Channel"/>.
 	/// </summary>
 	public IReadOnlyList<DiscordUser> CurrentUsers
 		=> new List<DiscordUser>(this.CurrentUsersInternal.Values);
+
 	/// <summary>
 	/// Gets the internal list of users.
 	/// </summary>
-	internal readonly Dictionary<ulong, DiscordUser> CurrentUsersInternal = new();
+	internal readonly Dictionary<ulong, DiscordUser> CurrentUsersInternal = [];
 
 	/// <summary>
 	/// Gets whether this player is currently connected.
@@ -295,7 +302,8 @@ public sealed class LavalinkGuildPlayer
 	/// <returns>The updated guild player.</returns>
 	public async Task<LavalinkGuildPlayer> PlayPartialAsync(string identifier, TimeSpan startTime, TimeSpan endTime)
 	{
-		this.Player = await this.Session.Rest.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, false, identifier: identifier, position: (int)startTime.TotalMilliseconds, endTime: (int)endTime.TotalMilliseconds).ConfigureAwait(false);
+		this.Player = await this.Session.Rest.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, false, identifier: identifier, position: (int)startTime.TotalMilliseconds,
+			endTime: (int)endTime.TotalMilliseconds).ConfigureAwait(false);
 		return this;
 	}
 
@@ -308,7 +316,8 @@ public sealed class LavalinkGuildPlayer
 	/// <returns>The updated guild player.</returns>
 	public async Task<LavalinkGuildPlayer> PlayPartialAsync(LavalinkTrack track, TimeSpan startTime, TimeSpan endTime)
 	{
-		this.Player = await this.Session.Rest.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, false, identifier: track.Info.Uri.ToString(), position: (int)startTime.TotalMilliseconds, endTime: (int)endTime.TotalMilliseconds).ConfigureAwait(false);
+		this.Player = await this.Session.Rest.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, false, identifier: track.Info.Uri.ToString(),
+			position: (int)startTime.TotalMilliseconds, endTime: (int)endTime.TotalMilliseconds).ConfigureAwait(false);
 		return this;
 	}
 
@@ -321,7 +330,9 @@ public sealed class LavalinkGuildPlayer
 	/// <returns>The updated guild player.</returns>
 	public async Task<LavalinkGuildPlayer> PlayPartialEncodedAsync(string encodedTrack, TimeSpan startTime, TimeSpan endTime)
 	{
-		this.Player = await this.Session.Rest.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, false, encodedTrack, position: (int)startTime.TotalMilliseconds, endTime: (int)endTime.TotalMilliseconds).ConfigureAwait(false);
+		this.Player = await this.Session.Rest
+			.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, false, encodedTrack, position: (int)startTime.TotalMilliseconds, endTime: (int)endTime.TotalMilliseconds)
+			.ConfigureAwait(false);
 		return this;
 	}
 
@@ -379,6 +390,7 @@ public sealed class LavalinkGuildPlayer
 	{
 		if (volume is < 0 or > 1000)
 			throw new ArgumentException("Volume can only be between 0 and 1000", nameof(volume));
+
 		this.Player = await this.Session.Rest.UpdatePlayerAsync(this.Session.Config.SessionId!, this.GuildId, true, volume: volume).ConfigureAwait(false);
 		return this;
 	}
@@ -421,20 +433,21 @@ public sealed class LavalinkGuildPlayer
 	/// <exception cref="NotSupportedException">Thrown when the <paramref name="url"/> is a pure youtube playlist.</exception>
 	public async Task<LavalinkGuildPlayer> PlayDirectUrlAsync(string url)
 	{
-		if (CommonRegEx.AdvancedYoutubeRegex.IsMatch(url))
+		if (CommonRegEx.AdvancedYoutubeRegex().IsMatch(url))
 		{
 			if (url.Contains("playlist"))
 				throw new NotSupportedException("Lavalink is unable to play a playlist directly.");
-			var match = CommonRegEx.AdvancedYoutubeRegex.Match(url);
+
+			var match = CommonRegEx.AdvancedYoutubeRegex().Match(url);
 			if (match.Groups["list"] != null! && !string.IsNullOrEmpty(match.Groups["list"].Value))
 			{
-				this.Session.Discord.Logger.LogTrace(LavalinkEvents.Misc, null, "Removed list from playlist url. Not supported.");
+				this.Session.Discord.Logger.LogTrace(LavalinkEvents.Misc, null, "Removed list from playlist url. Not supported");
 				url = url.Replace($"list={match.Groups["list"].Value}", null);
 			}
 
 			if (match.Groups["index"] != null! && !string.IsNullOrEmpty(match.Groups["index"].Value))
 			{
-				this.Session.Discord.Logger.LogTrace(LavalinkEvents.Misc, null, "Removed index from playlist url. Not supported.");
+				this.Session.Discord.Logger.LogTrace(LavalinkEvents.Misc, null, "Removed index from playlist url. Not supported");
 				url = url.Replace($"index={match.Groups["index"].Value}", null);
 			}
 		}
@@ -443,7 +456,7 @@ public sealed class LavalinkGuildPlayer
 		return this;
 	}
 
-	#region Queue Operations
+#region Queue Operations
 
 	/// <summary>
 	/// Adds a <see cref="LavalinkTrack"/> to the queue.
@@ -468,7 +481,7 @@ public sealed class LavalinkGuildPlayer
 	/// <param name="identifier">The identifier to look up.</param>
 	/// <returns><see langword="true"/> if the entry was found and removed.</returns>
 	public bool RemoveFromQueueByIdentifierAsync(string identifier)
-		=> this._queueEntriesInternal.Any() && this._queueEntriesInternal!.TryGetValue(identifier, out var entry) && this.RemoveFromQueue(entry!);
+		=> this._queueEntriesInternal.Count != 0 && this._queueEntriesInternal!.TryGetValue(identifier, out var entry) && this.RemoveFromQueue(entry!);
 
 	/// <summary>
 	/// Plays the queue while entries are presented.
@@ -477,6 +490,7 @@ public sealed class LavalinkGuildPlayer
 	{
 		if (!this.QUEUE_SYSTEM_ENABLED)
 			return;
+
 		while (this._queueEntriesInternal.Count > 0)
 		{
 			this._queueTsc = new();
@@ -496,7 +510,7 @@ public sealed class LavalinkGuildPlayer
 		}
 	}
 
-	#endregion
+#endregion
 
 	/// <summary>
 	/// Switches the player to a new channel.
@@ -508,6 +522,7 @@ public sealed class LavalinkGuildPlayer
 	{
 		if (channel.Type != ChannelType.Stage && channel.Type != ChannelType.Voice)
 			throw new ArgumentException("Cannot switch to a non-voice channel", nameof(channel));
+
 		this.ChannelId = channel.Id;
 		var vsd = new DiscordDispatchPayload
 		{
@@ -536,7 +551,6 @@ public sealed class LavalinkGuildPlayer
 	/// <param name="voiceState">The voice state to update with.</param>
 	internal void UpdateVoiceState(LavalinkVoiceState voiceState)
 		=> this.Player.VoiceState = voiceState;
-
 
 	/// <summary>
 	/// Disconnect the guild player from the channel.

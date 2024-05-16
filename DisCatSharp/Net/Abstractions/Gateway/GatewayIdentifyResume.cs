@@ -26,7 +26,10 @@ internal sealed class GatewayIdentify
 	/// </summary>
 	[JsonProperty("properties")]
 	public ClientProperties ClientProperties =>
-		new() { Discord = this.Discord };
+		new()
+		{
+			Discord = this.Discord
+		};
 
 	/// <summary>
 	/// Gets or sets whether to encrypt websocket traffic.
@@ -50,7 +53,7 @@ internal sealed class GatewayIdentify
 	/// Gets or sets the presence for this connection.
 	/// </summary>
 	[JsonProperty("presence", NullValueHandling = NullValueHandling.Ignore)]
-	public StatusUpdate Presence { get; set; }
+	public StatusUpdate? Presence { get; set; }
 
 	/// <summary>
 	/// Gets or sets the intent flags for this connection.

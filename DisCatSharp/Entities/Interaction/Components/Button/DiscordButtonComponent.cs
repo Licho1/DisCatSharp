@@ -72,7 +72,8 @@ public sealed class DiscordButtonComponent : DiscordComponent
 	/// Constructs a new button based on another button.
 	/// </summary>
 	/// <param name="other">The button to copy.</param>
-	public DiscordButtonComponent(DiscordButtonComponent other) : this()
+	public DiscordButtonComponent(DiscordButtonComponent other)
+		: this()
 	{
 		this.CustomId = other.CustomId;
 		this.Style = other.Style;
@@ -105,6 +106,7 @@ public sealed class DiscordButtonComponent : DiscordComponent
 			this.Label = label ?? throw new ArgumentException("Label can only be null if emoji is set.");
 			this.Emoji = null;
 		}
+
 		this.Type = ComponentType.Button;
 	}
 }

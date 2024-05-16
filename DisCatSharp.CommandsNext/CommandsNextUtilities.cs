@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 using DisCatSharp.CommandsNext.Attributes;
@@ -22,11 +21,6 @@ namespace DisCatSharp.CommandsNext;
 public static class CommandsNextUtilities
 {
 	/// <summary>
-	/// Gets the user regex.
-	/// </summary>
-	private static Regex s_userRegex { get; } = DiscordRegEx.User;
-
-	/// <summary>
 	/// Checks whether the message has a specified string prefix.
 	/// </summary>
 	/// <param name="msg">Message to check.</param>
@@ -36,7 +30,11 @@ public static class CommandsNextUtilities
 	public static int GetStringPrefixLength(this DiscordMessage msg, string str, StringComparison comparisonType = StringComparison.Ordinal)
 	{
 		var content = msg.Content;
-		return str.Length >= content.Length ? -1 : !content.StartsWith(str, comparisonType) ? -1 : str.Length;
+		return str.Length >= content.Length
+			? -1
+			: !content.StartsWith(str, comparisonType)
+				? -1
+				: str.Length;
 	}
 
 	/// <summary>
@@ -48,7 +46,7 @@ public static class CommandsNextUtilities
 	public static int GetMentionPrefixLength(this DiscordMessage msg, DiscordUser user)
 	{
 		var content = msg.Content;
-		if (!content.StartsWith("<@"))
+		if (!content.StartsWith("<@", StringComparison.Ordinal))
 			return -1;
 
 		var cni = content.IndexOf('>');
@@ -56,7 +54,7 @@ public static class CommandsNextUtilities
 			return -1;
 
 		var cnp = content[..(cni + 1)];
-		var m = s_userRegex.Match(cnp);
+		var m = DiscordRegEx.UserRegex().Match(cnp);
 		if (!m.Success)
 			return -1;
 
@@ -85,6 +83,7 @@ public static class CommandsNextUtilities
 		for (; i < str.Length; i++)
 			if (!char.IsWhiteSpace(str[i]))
 				break;
+
 		startPos = i;
 
 		var endPosition = -1;
@@ -233,19 +232,19 @@ public static class CommandsNextUtilities
 				rawArgumentList.Add(argValue);
 			}
 
-			if (argValue == null && !arg.IsOptional && !arg.IsCatchAll)
-				return new ArgumentBindingResult(new ArgumentException("Not enough arguments supplied to the command."));
+			if (argValue == null && arg is { IsOptional: false, IsCatchAll: false })
+				return new(new ArgumentException("Not enough arguments supplied to the command."));
 			else if (argValue == null)
 				rawArgumentList.Add(null);
 		}
 
 		if (!ignoreSurplus && foundAt < argString.Length)
-			return new ArgumentBindingResult(new ArgumentException("Too many arguments were supplied to this command."));
+			return new(new ArgumentException("Too many arguments were supplied to this command."));
 
 		for (var i = 0; i < overload.Arguments.Count; i++)
 		{
 			var arg = overload.Arguments[i];
-			if (arg.IsCatchAll && arg.IsArray)
+			if (arg is { IsCatchAll: true, IsArray: true })
 			{
 				var array = Array.CreateInstance(arg.Type, rawArgumentList.Count - i);
 				var start = i;
@@ -257,8 +256,9 @@ public static class CommandsNextUtilities
 					}
 					catch (Exception ex)
 					{
-						return new ArgumentBindingResult(ex);
+						return new(ex);
 					}
+
 					i++;
 				}
 
@@ -266,19 +266,17 @@ public static class CommandsNextUtilities
 				break;
 			}
 			else
-			{
 				try
 				{
 					args[i + 2] = rawArgumentList[i] != null ? await ctx.CommandsNext.ConvertArgument(rawArgumentList[i], ctx, arg.Type).ConfigureAwait(false) : arg.DefaultValue;
 				}
 				catch (Exception ex)
 				{
-					return new ArgumentBindingResult(ex);
+					return new(ex);
 				}
-			}
 		}
 
-		return new ArgumentBindingResult(args, rawArgumentList);
+		return new(args, rawArgumentList);
 	}
 
 	/// <summary>
@@ -305,7 +303,7 @@ public static class CommandsNextUtilities
 			return false;
 
 		// check if anonymous
-		if (ti.IsGenericType && ti.Name.Contains("AnonymousType") && (ti.Name.StartsWith("<>") || ti.Name.StartsWith("VB$")) && (ti.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic)
+		if (ti.IsGenericType && ti.Name.Contains("AnonymousType") && (ti.Name.StartsWith("<>", StringComparison.Ordinal) || ti.Name.StartsWith("VB$", StringComparison.Ordinal)) && (ti.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic)
 			return false;
 
 		// check if abstract, static, or not a class
@@ -339,11 +337,8 @@ public static class CommandsNextUtilities
 
 		// check if appropriate return and arguments
 		parameters = method.GetParameters();
-		if (!parameters.Any() || parameters.First().ParameterType != typeof(CommandContext) || method.ReturnType != typeof(Task))
-			return false;
 
-		// qualifies
-		return true;
+		return parameters.Length != 0 && parameters.First().ParameterType == typeof(CommandContext) && method.ReturnType == typeof(Task);
 	}
 
 	/// <summary>
@@ -390,7 +385,7 @@ public static class CommandsNextUtilities
 		}
 
 		// inject into fields
-		var fields = t.GetRuntimeFields().Where(xf => !xf.IsInitOnly && !xf.IsStatic && xf.IsPublic);
+		var fields = t.GetRuntimeFields().Where(xf => !xf.IsInitOnly && xf is { IsStatic: false, IsPublic: true });
 		foreach (var field in fields)
 		{
 			if (field.GetCustomAttribute<DontInjectAttribute>() != null)

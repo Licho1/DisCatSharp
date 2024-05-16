@@ -23,7 +23,7 @@ public sealed class DiscordConfiguration
 	/// <summary>
 	/// Sets the token used to identify the client.
 	/// </summary>
-	public string Token
+	public string? Token
 	{
 		internal get => this._token;
 		set
@@ -34,7 +34,11 @@ public sealed class DiscordConfiguration
 			this._token = value.Trim();
 		}
 	}
-	private string _token = "";
+
+	/// <summary>
+	/// Sets the token used to identify the client (protected).
+	/// </summary>
+	private string? _token;
 
 	/// <summary>
 	/// <para>Sets the type of the token used to identify the client.</para>
@@ -44,7 +48,7 @@ public sealed class DiscordConfiguration
 
 	/// <summary>
 	/// <para>Sets the minimum logging level for messages.</para>
-	/// <para>Typically, the default value of <see cref="LogLevel.Information"/> is ok for most uses.</para>
+	/// <para>Defaults to <see cref="LogLevel.Information"/>.</para>
 	/// </summary>
 	public LogLevel MinimumLogLevel { internal get; set; } = LogLevel.Information;
 
@@ -110,7 +114,7 @@ public sealed class DiscordConfiguration
 	/// <para>Sets the proxy to use for HTTP and WebSocket connections to Discord.</para>
 	/// <para>Defaults to <see langword="null"/>.</para>
 	/// </summary>
-	public IWebProxy Proxy { internal get; set; } = null!;
+	public IWebProxy? Proxy { internal get; set; } = null;
 
 	/// <summary>
 	/// <para>Sets the timeout for HTTP requests.</para>
@@ -194,36 +198,6 @@ public sealed class DiscordConfiguration
 	public bool MobileStatus { internal get; set; } = false;
 
 	/// <summary>
-	/// <para>Whether to use canary. <see cref="UsePtb"/> has to be false.</para>
-	/// <para>Defaults to <see langword="false"/>.</para>
-	/// </summary>
-	[Deprecated("Use ApiChannel instead.")]
-	public bool UseCanary
-	{
-		internal get => this.ApiChannel == ApiChannel.Canary;
-		set
-		{
-			if (value)
-				this.ApiChannel = ApiChannel.Canary;
-		}
-	}
-
-	/// <summary>
-	/// <para>Whether to use ptb. <see cref="UseCanary"/> has to be false.</para>
-	/// <para>Defaults to <see langword="false"/>.</para>
-	/// </summary>
-	[Deprecated("Use ApiChannel instead.")]
-	public bool UsePtb
-	{
-		internal get => this.ApiChannel == ApiChannel.Ptb;
-		set
-		{
-			if (value)
-				this.ApiChannel = ApiChannel.Ptb;
-		}
-	}
-
-	/// <summary>
 	/// <para>Which api channel to use.</para>
 	/// <para>Defaults to <see cref="ApiChannel.Stable"/>.</para>
 	/// </summary>
@@ -239,7 +213,7 @@ public sealed class DiscordConfiguration
 	/// <para>Do not use, this is meant for DisCatSharp Devs.</para>
 	/// <para>Defaults to <see langword="null"/>.</para>
 	/// </summary>
-	public string Override { internal get; set; } = null!;
+	public string? Override { internal get; set; } = null;
 
 	/// <summary>
 	/// Sets your preferred API language. See <see cref="DiscordLocales" /> for valid locales.
@@ -263,7 +237,7 @@ public sealed class DiscordConfiguration
 	/// <para>This allows passing data around without resorting to static members.</para>
 	/// <para>Defaults to an empty service provider.</para>
 	/// </summary>
-	public IServiceProvider ServiceProvider { internal get; set; } = new ServiceCollection().BuildServiceProvider(true);
+	public IServiceProvider ServiceProvider { internal get; init; } = new ServiceCollection().BuildServiceProvider(true);
 
 	/// <summary>
 	/// <para>Whether to report missing fields for discord object.</para>
@@ -312,22 +286,20 @@ public sealed class DiscordConfiguration
 		{
 			if (!this.EnableLibraryDeveloperMode)
 				throw new AccessViolationException("Cannot set this as non-library-dev");
-			else if (value == null)
+
+			if (value is null)
 				this._exceptions.Clear();
-			else this._exceptions = value.All(val => val.BaseType == typeof(DisCatSharpException))
-				? value
-				: throw new InvalidOperationException("Can only track exceptions who inherit from " + nameof(DisCatSharpException) + " and must be constructed with typeof(Type)");
+			else
+				this._exceptions = value.All(val => val.BaseType == typeof(DisCatSharpException))
+					? value
+					: throw new InvalidOperationException("Can only track exceptions who inherit from " + nameof(DisCatSharpException) + " and must be constructed with typeof(Type)");
 		}
 	}
 
 	/// <summary>
 	/// The exception we track with sentry.
 	/// </summary>
-	private List<Type> _exceptions = new()
-	{
-		typeof(ServerErrorException),
-		typeof(BadRequestException)
-	};
+	private List<Type> _exceptions = [typeof(ServerErrorException), typeof(BadRequestException)];
 
 	/// <summary>
 	/// <para>Whether to enable the library developer mode.</para>
@@ -352,24 +324,45 @@ public sealed class DiscordConfiguration
 
 	/// <summary>
 	/// Whether to autofetch the sku ids.
-	/// <para>Mutually exclusive to <see cref="SkuId"/> and <see cref="TestSkuId"/>.</para>
+	/// <para>Mutually exclusive to <see cref="SkuId"/>.</para>
 	/// </summary>
 	[RequiresFeature(Features.MonetizedApplication)]
-	public bool AutoFetchSkuIds { get; set; } = false;
+	public bool AutoFetchSkuIds { internal get; set; } = false;
 
 	/// <summary>
 	/// The applications sku id for premium apps.
 	/// <para>Mutually exclusive to <see cref="AutoFetchSkuIds"/>.</para>
 	/// </summary>
 	[RequiresFeature(Features.MonetizedApplication)]
-	public ulong? SkuId { get; set; } = null;
+	public ulong? SkuId { internal get; set; } = null;
 
 	/// <summary>
-	/// The applications test sku id for premium apps.
-	/// <para>Mutually exclusive to <see cref="AutoFetchSkuIds"/>.</para>
+	/// Whether to disable the update check.
 	/// </summary>
-	[RequiresFeature(Features.MonetizedApplication)]
-	public ulong? TestSkuId { get; set; } = null;
+	public bool DisableUpdateCheck { internal get; set; } = false;
+
+	/// <summary>
+	/// Against which channel to check for updates.
+	/// <para>Defaults to <see cref="VersionCheckMode.NuGet"/>.</para>
+	/// </summary>
+	public VersionCheckMode UpdateCheckMode { internal get; set; } = VersionCheckMode.NuGet;
+
+	/// <summary>
+	/// Whether to include prerelease versions in the update check.
+	/// </summary>
+	public bool IncludePrereleaseInUpdateCheck { internal get; set; } = true;
+
+	/// <summary>
+	/// Sets the GitHub token to use for the update check.
+	/// <para>Only useful if extensions are private and <see cref="UpdateCheckMode"/> is <see cref="VersionCheckMode.GitHub"/>.</para>
+	/// </summary>
+	public string? UpdateCheckGitHubToken { internal get; set; } = null;
+
+	/// <summary>
+	/// Whether to show release notes in the update check.
+	/// <para>Defaults to <see langword="false"/>.</para>
+	/// </summary>
+	public bool ShowReleaseNotesInUpdateCheck { internal get; set; } = false;
 
 	/// <summary>
 	/// Creates a new configuration with default values.
@@ -412,8 +405,6 @@ public sealed class DiscordConfiguration
 		this.Intents = other.Intents;
 		this.LoggerFactory = other.LoggerFactory;
 		this.MobileStatus = other.MobileStatus;
-		this.UseCanary = other.UseCanary;
-		this.UsePtb = other.UsePtb;
 		this.AutoRefreshChannelCache = other.AutoRefreshChannelCache;
 		this.ApiVersion = other.ApiVersion;
 		this.ServiceProvider = other.ServiceProvider;
@@ -434,6 +425,10 @@ public sealed class DiscordConfiguration
 		this.EnablePayloadReceivedEvent = other.EnablePayloadReceivedEvent;
 		this.AutoFetchSkuIds = other.AutoFetchSkuIds;
 		this.SkuId = other.SkuId;
-		this.TestSkuId = other.TestSkuId;
+		this.DisableUpdateCheck = other.DisableUpdateCheck;
+		this.UpdateCheckMode = other.UpdateCheckMode;
+		this.IncludePrereleaseInUpdateCheck = other.IncludePrereleaseInUpdateCheck;
+		this.UpdateCheckGitHubToken = other.UpdateCheckGitHubToken;
+		this.ShowReleaseNotesInUpdateCheck = other.ShowReleaseNotesInUpdateCheck;
 	}
 }

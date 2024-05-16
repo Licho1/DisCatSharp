@@ -10,18 +10,20 @@ namespace DisCatSharp.Common;
 /// </summary>
 /// <typeparam name="TValue">Type of items in this dictionary.</typeparam>
 public sealed class CharSpanLookupDictionary<TValue> :
-	IDictionary<string, TValue>,
-	IReadOnlyDictionary<string, TValue>,
+	IDictionary<string, TValue?>,
+	IReadOnlyDictionary<string, TValue?>,
 	IDictionary
 {
 	/// <summary>
 	/// Gets the collection of all keys present in this dictionary.
 	/// </summary>
 	public IEnumerable<string> Keys => this.GetKeysInternal();
+
 	/// <summary>
 	/// Gets the keys.
 	/// </summary>
-	ICollection<string> IDictionary<string, TValue>.Keys => this.GetKeysInternal();
+	ICollection<string> IDictionary<string, TValue?>.Keys => this.GetKeysInternal();
+
 	/// <summary>
 	/// Gets the keys.
 	/// </summary>
@@ -30,11 +32,13 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <summary>
 	/// Gets the collection of all values present in this dictionary.
 	/// </summary>
-	public IEnumerable<TValue> Values => this.GetValuesInternal();
+	public IEnumerable<TValue?> Values => this.GetValuesInternal();
+
 	/// <summary>
 	/// Gets the values.
 	/// </summary>
-	ICollection<TValue> IDictionary<string, TValue>.Values => this.GetValuesInternal();
+	ICollection<TValue?> IDictionary<string, TValue?>.Values => this.GetValuesInternal();
+
 	/// <summary>
 	/// Gets the values.
 	/// </summary>
@@ -70,23 +74,20 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="key">Key to get or set the value for.</param>
 	/// <returns>Value matching the supplied key, if applicable.</returns>
-	public TValue this[string key]
+	public TValue? this[string key]
 	{
 		get
 		{
-			if (key == null)
-				throw new ArgumentNullException(nameof(key));
+			ArgumentNullException.ThrowIfNull(key);
 
-			if (!this.TryRetrieveInternal(key.AsSpan(), out var value))
-				throw new KeyNotFoundException($"The given key '{key}' was not present in the dictionary.");
-
-			return value;
+			return !this.TryRetrieveInternal(key.AsSpan(), out var value)
+				? throw new KeyNotFoundException($"The given key '{key}' was not present in the dictionary.")
+				: value;
 		}
 
 		set
 		{
-			if (key == null)
-				throw new ArgumentNullException(nameof(key));
+			ArgumentNullException.ThrowIfNull(key);
 
 			this.TryInsertInternal(key, value, true);
 		}
@@ -97,47 +98,41 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="key">Key to get or set the value for.</param>
 	/// <returns>Value matching the supplied key, if applicable.</returns>
-	public TValue this[ReadOnlySpan<char> key]
+	public TValue? this[ReadOnlySpan<char> key]
 	{
-		get
-		{
-			if (!this.TryRetrieveInternal(key, out var value))
-				throw new KeyNotFoundException($"The given key was not present in the dictionary.");
-
-			return value;
-		}
+		get => !this.TryRetrieveInternal(key, out var value)
+			? throw new KeyNotFoundException($"The given key was not present in the dictionary.")
+			: value;
 
 		set
 		{
 			unsafe
 			{
 				fixed (char* chars = &key.GetPinnableReference())
-					this.TryInsertInternal(new string(chars, 0, key.Length), value, true);
+				{
+					this.TryInsertInternal(new(chars, 0, key.Length), value, true);
+				}
 			}
 		}
 	}
 
-	object IDictionary.this[object key]
+	/// <inheritdoc/>
+	object? IDictionary.this[object key]
 	{
-		get
-		{
-			if (!(key is string tkey))
-				throw new ArgumentException("Key needs to be an instance of a string.");
-
-			if (!this.TryRetrieveInternal(tkey.AsSpan(), out var value))
-				throw new KeyNotFoundException($"The given key '{tkey}' was not present in the dictionary.");
-
-			return value;
-		}
+		get => key is not string tkey
+			? throw new ArgumentException("Key needs to be an instance of a string.")
+			: !this.TryRetrieveInternal(tkey.AsSpan(), out var value)
+				? throw new KeyNotFoundException($"The given key '{tkey}' was not present in the dictionary.")
+				: (object?)value;
 
 		set
 		{
-			if (!(key is string tkey))
+			if (key is not string tkey)
 				throw new ArgumentException("Key needs to be an instance of a string.");
 
-			if (!(value is TValue tvalue))
+			if (value is not TValue tvalue)
 			{
-				tvalue = default;
+				tvalue = default!;
 				if (tvalue != null)
 					throw new ArgumentException($"Value needs to be an instance of {typeof(TValue)}.");
 			}
@@ -149,14 +144,14 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <summary>
 	/// Gets the internal buckets.
 	/// </summary>
-	private readonly Dictionary<ulong, KeyedValue> _internalBuckets;
+	private readonly Dictionary<ulong, KeyedValue?> _internalBuckets;
 
 	/// <summary>
 	/// Creates a new, empty <see cref="CharSpanLookupDictionary{TValue}"/> with string keys and items of type <typeparamref name="TValue"/>.
 	/// </summary>
 	public CharSpanLookupDictionary()
 	{
-		this._internalBuckets = new Dictionary<ulong, KeyedValue>();
+		this._internalBuckets = [];
 	}
 
 	/// <summary>
@@ -165,14 +160,14 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="initialCapacity">Initial capacity of the dictionary.</param>
 	public CharSpanLookupDictionary(int initialCapacity)
 	{
-		this._internalBuckets = new Dictionary<ulong, KeyedValue>(initialCapacity);
+		this._internalBuckets = new(initialCapacity);
 	}
 
 	/// <summary>
 	/// Creates a new <see cref="CharSpanLookupDictionary{TValue}"/> with string keys and items of type <typeparamref name="TValue"/> and populates it with key-value pairs from supplied dictionary.
 	/// </summary>
 	/// <param name="values">Dictionary containing items to populate this dictionary with.</param>
-	public CharSpanLookupDictionary(IDictionary<string, TValue> values)
+	public CharSpanLookupDictionary(IDictionary<string, TValue?> values)
 		: this(values.Count)
 	{
 		foreach (var (k, v) in values)
@@ -183,8 +178,8 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// Creates a new <see cref="CharSpanLookupDictionary{TValue}"/> with string keys and items of type <typeparamref name="TValue"/> and populates it with key-value pairs from supplied dictionary.
 	/// </summary>
 	/// <param name="values">Dictionary containing items to populate this dictionary with.</param>
-	public CharSpanLookupDictionary(IReadOnlyDictionary<string, TValue> values)
-		 : this(values.Count)
+	public CharSpanLookupDictionary(IReadOnlyDictionary<string, TValue?> values)
+		: this(values.Count)
 	{
 		foreach (var (k, v) in values)
 			this.Add(k, v);
@@ -194,7 +189,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// Creates a new <see cref="CharSpanLookupDictionary{TValue}"/> with string keys and items of type <typeparamref name="TValue"/> and populates it with key-value pairs from supplied key-value collection.
 	/// </summary>
 	/// <param name="values">Dictionary containing items to populate this dictionary with.</param>
-	public CharSpanLookupDictionary(IEnumerable<KeyValuePair<string, TValue>> values)
+	public CharSpanLookupDictionary(IEnumerable<KeyValuePair<string, TValue?>> values)
 		: this()
 	{
 		foreach (var (k, v) in values)
@@ -206,7 +201,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="key">Key to insert.</param>
 	/// <param name="value">Value corresponding to this key.</param>
-	public void Add(string key, TValue value)
+	public void Add(string key, TValue? value)
 	{
 		if (!this.TryInsertInternal(key, value, false))
 			throw new ArgumentException("Given key is already present in the dictionary.", nameof(key));
@@ -217,13 +212,15 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="key">Key to insert.</param>
 	/// <param name="value">Value corresponding to this key.</param>
-	public void Add(ReadOnlySpan<char> key, TValue value)
+	public void Add(ReadOnlySpan<char> key, TValue? value)
 	{
 		unsafe
 		{
 			fixed (char* chars = &key.GetPinnableReference())
-				if (!this.TryInsertInternal(new string(chars, 0, key.Length), value, false))
+			{
+				if (!this.TryInsertInternal(new(chars, 0, key.Length), value, false))
 					throw new ArgumentException("Given key is already present in the dictionary.", nameof(key));
+			}
 		}
 	}
 
@@ -233,7 +230,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">Key to insert.</param>
 	/// <param name="value">Value corresponding to this key.</param>
 	/// <returns>Whether the operation was successful.</returns>
-	public bool TryAdd(string key, TValue value)
+	public bool TryAdd(string key, TValue? value)
 		=> this.TryInsertInternal(key, value, false);
 
 	/// <summary>
@@ -242,12 +239,14 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">Key to insert.</param>
 	/// <param name="value">Value corresponding to this key.</param>
 	/// <returns>Whether the operation was successful.</returns>
-	public bool TryAdd(ReadOnlySpan<char> key, TValue value)
+	public bool TryAdd(ReadOnlySpan<char> key, TValue? value)
 	{
 		unsafe
 		{
 			fixed (char* chars = &key.GetPinnableReference())
-				return this.TryInsertInternal(new string(chars, 0, key.Length), value, false);
+			{
+				return this.TryInsertInternal(new(chars, 0, key.Length), value, false);
+			}
 		}
 	}
 
@@ -257,10 +256,9 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">Key to retrieve the value for.</param>
 	/// <param name="value">Retrieved value.</param>
 	/// <returns>Whether the operation was successful.</returns>
-	public bool TryGetValue(string key, out TValue value)
+	public bool TryGetValue(string key, out TValue? value)
 	{
-		if (key == null)
-			throw new ArgumentNullException(nameof(key));
+		ArgumentNullException.ThrowIfNull(key);
 
 		return this.TryRetrieveInternal(key.AsSpan(), out value);
 	}
@@ -271,7 +269,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">Key to retrieve the value for.</param>
 	/// <param name="value">Retrieved value.</param>
 	/// <returns>Whether the operation was successful.</returns>
-	public bool TryGetValue(ReadOnlySpan<char> key, out TValue value)
+	public bool TryGetValue(ReadOnlySpan<char> key, out TValue? value)
 		=> this.TryRetrieveInternal(key, out value);
 
 	/// <summary>
@@ -280,10 +278,9 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">Key to remove the value for.</param>
 	/// <param name="value">Removed value.</param>
 	/// <returns>Whether the operation was successful.</returns>
-	public bool TryRemove(string key, out TValue value)
+	public bool TryRemove(string key, out TValue? value)
 	{
-		if (key == null)
-			throw new ArgumentNullException(nameof(key));
+		ArgumentNullException.ThrowIfNull(key);
 
 		return this.TryRemoveInternal(key.AsSpan(), out value);
 	}
@@ -294,7 +291,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">Key to remove the value for.</param>
 	/// <param name="value">Removed value.</param>
 	/// <returns>Whether the operation was successful.</returns>
-	public bool TryRemove(ReadOnlySpan<char> key, out TValue value)
+	public bool TryRemove(ReadOnlySpan<char> key, out TValue? value)
 		=> this.TryRemoveInternal(key, out value);
 
 	/// <summary>
@@ -326,15 +323,15 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// Gets an enumerator over key-value pairs in this dictionary.
 	/// </summary>
 	/// <returns></returns>
-	public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator()
-		=> new Enumerator(this);
+	public IEnumerator<KeyValuePair<string, TValue?>> GetEnumerator()
+		=> new Enumerator(this!);
 
 	/// <summary>
 	/// Removes the.
 	/// </summary>
 	/// <param name="key">The key.</param>
 	/// <returns>A bool.</returns>
-	bool IDictionary<string, TValue>.Remove(string key)
+	bool IDictionary<string, TValue?>.Remove(string key)
 		=> this.TryRemove(key.AsSpan(), out _);
 
 	/// <summary>
@@ -342,12 +339,12 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="key">The key.</param>
 	/// <param name="value">The value.</param>
-	void IDictionary.Add(object key, object value)
+	void IDictionary.Add(object key, object? value)
 	{
-		if (!(key is string tkey))
+		if (key is not string tkey)
 			throw new ArgumentException("Key needs to be an instance of a string.");
 
-		if (!(value is TValue tvalue))
+		if (value is not TValue tvalue)
 		{
 			tvalue = default;
 			if (tvalue != null)
@@ -363,7 +360,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">The key.</param>
 	void IDictionary.Remove(object key)
 	{
-		if (!(key is string tkey))
+		if (key is not string tkey)
 			throw new ArgumentException("Key needs to be an instance of a string.");
 
 		this.TryRemove(tkey, out _);
@@ -375,12 +372,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">The key.</param>
 	/// <returns>A bool.</returns>
 	bool IDictionary.Contains(object key)
-	{
-		if (!(key is string tkey))
-			throw new ArgumentException("Key needs to be an instance of a string.");
-
-		return this.ContainsKey(tkey);
-	}
+		=> key is not string tkey ? throw new ArgumentException("Key needs to be an instance of a string.") : this.ContainsKey(tkey);
 
 	/// <summary>
 	/// Gets the enumerator.
@@ -393,7 +385,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// Adds the.
 	/// </summary>
 	/// <param name="item">The item.</param>
-	void ICollection<KeyValuePair<string, TValue>>.Add(KeyValuePair<string, TValue> item)
+	void ICollection<KeyValuePair<string, TValue?>>.Add(KeyValuePair<string, TValue?> item)
 		=> this.Add(item.Key, item.Value);
 
 	/// <summary>
@@ -401,7 +393,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="item">The item.</param>
 	/// <returns>A bool.</returns>
-	bool ICollection<KeyValuePair<string, TValue>>.Remove(KeyValuePair<string, TValue> item)
+	bool ICollection<KeyValuePair<string, TValue?>>.Remove(KeyValuePair<string, TValue?> item)
 		=> this.TryRemove(item.Key, out _);
 
 	/// <summary>
@@ -409,15 +401,15 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// </summary>
 	/// <param name="item">The item.</param>
 	/// <returns>A bool.</returns>
-	bool ICollection<KeyValuePair<string, TValue>>.Contains(KeyValuePair<string, TValue> item)
-		=> this.TryGetValue(item.Key, out var value) && EqualityComparer<TValue>.Default.Equals(value, item.Value);
+	bool ICollection<KeyValuePair<string, TValue?>>.Contains(KeyValuePair<string, TValue?> item)
+		=> this.TryGetValue(item.Key, out var value) && EqualityComparer<TValue?>.Default.Equals(value, item.Value);
 
 	/// <summary>
 	/// Copies the to.
 	/// </summary>
 	/// <param name="array">The array.</param>
 	/// <param name="arrayIndex">The array index.</param>
-	void ICollection<KeyValuePair<string, TValue>>.CopyTo(KeyValuePair<string, TValue>[] array, int arrayIndex)
+	void ICollection<KeyValuePair<string, TValue?>>.CopyTo(KeyValuePair<string, TValue?>[] array, int arrayIndex)
 	{
 		if (array.Length - arrayIndex < this.Count)
 			throw new ArgumentException("Target array is too small.", nameof(array));
@@ -428,7 +420,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 			var kdv = v;
 			while (kdv != null)
 			{
-				array[i++] = new KeyValuePair<string, TValue>(kdv.Key, kdv.Value);
+				array[i++] = new(kdv.Key, kdv.Value);
 				kdv = kdv.Next;
 			}
 		}
@@ -441,9 +433,9 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="arrayIndex">The array index.</param>
 	void ICollection.CopyTo(Array array, int arrayIndex)
 	{
-		if (array is KeyValuePair<string, TValue>[] tarray)
+		if (array is KeyValuePair<string, TValue?>[] tarray)
 		{
-			(this as ICollection<KeyValuePair<string, TValue>>).CopyTo(tarray, arrayIndex);
+			(this as ICollection<KeyValuePair<string, TValue?>>).CopyTo(tarray, arrayIndex);
 			return;
 		}
 
@@ -456,7 +448,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 			var kdv = v;
 			while (kdv != null)
 			{
-				array.SetValue(new KeyValuePair<string, TValue>(kdv.Key, kdv.Value), i++);
+				array.SetValue(new KeyValuePair<string, TValue?>(kdv.Key, kdv.Value), i++);
 				kdv = kdv.Next;
 			}
 		}
@@ -476,7 +468,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="value">The value.</param>
 	/// <param name="replace">If true, replace.</param>
 	/// <returns>A bool.</returns>
-	private bool TryInsertInternal(string key, TValue value, bool replace)
+	private bool TryInsertInternal(string key, TValue? value, bool replace)
 	{
 		if (key == null)
 			throw new ArgumentNullException(nameof(key), "Key cannot be null.");
@@ -484,7 +476,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 		var hash = key.CalculateKnuthHash();
 		if (!this._internalBuckets.ContainsKey(hash))
 		{
-			this._internalBuckets.Add(hash, new KeyedValue(key, hash, value));
+			this._internalBuckets.Add(hash, new(key, hash, value));
 			this.Count++;
 			return true;
 		}
@@ -506,7 +498,8 @@ public sealed class CharSpanLookupDictionary<TValue> :
 			kdv = kdv.Next;
 		}
 
-		kdvLast.Next = new KeyedValue(key, hash, value);
+		if (kdvLast is not null)
+			kdvLast.Next = new(key, hash, value);
 		this.Count++;
 		return true;
 	}
@@ -517,7 +510,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">The key.</param>
 	/// <param name="value">The value.</param>
 	/// <returns>A bool.</returns>
-	private bool TryRetrieveInternal(ReadOnlySpan<char> key, out TValue value)
+	private bool TryRetrieveInternal(ReadOnlySpan<char> key, out TValue? value)
 	{
 		value = default;
 
@@ -526,13 +519,11 @@ public sealed class CharSpanLookupDictionary<TValue> :
 			return false;
 
 		while (kdv != null)
-		{
 			if (key.SequenceEqual(kdv.Key.AsSpan()))
 			{
 				value = kdv.Value;
 				return true;
 			}
-		}
 
 		return false;
 	}
@@ -543,7 +534,7 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <param name="key">The key.</param>
 	/// <param name="value">The value.</param>
 	/// <returns>A bool.</returns>
-	private bool TryRemoveInternal(ReadOnlySpan<char> key, out TValue value)
+	private bool TryRemoveInternal(ReadOnlySpan<char> key, out TValue? value)
 	{
 		value = default;
 
@@ -551,33 +542,38 @@ public sealed class CharSpanLookupDictionary<TValue> :
 		if (!this._internalBuckets.TryGetValue(hash, out var kdv))
 			return false;
 
-		if (kdv.Next == null && key.SequenceEqual(kdv.Key.AsSpan()))
+		switch (kdv?.Next)
 		{
-			// Only bucket under this hash and key matches, pop the entire bucket
+			case null when kdv is null:
+				return false;
+			case null when key.SequenceEqual(kdv.Key.AsSpan()):
+				// Only bucket under this hash and key matches, pop the entire bucket
 
-			value = kdv.Value;
-			this._internalBuckets.Remove(hash);
-			this.Count--;
-			return true;
-		}
-		else if (kdv.Next == null)
-		{
+				value = kdv.Value;
+				this._internalBuckets.Remove(hash);
+				this.Count--;
+				return true;
 			// Only bucket under this hash and key does not match, cannot remove
+			case null:
+				return false;
+			default:
+			{
+				if (key.SequenceEqual(kdv.Key.AsSpan()))
+				{
+					// First key in the bucket matches, pop it and set its child as current bucket
 
-			return false;
-		}
-		else if (key.SequenceEqual(kdv.Key.AsSpan()))
-		{
-			// First key in the bucket matches, pop it and set its child as current bucket
+					value = kdv.Value;
+					this._internalBuckets[hash] = kdv.Next;
+					this.Count--;
+					return true;
+				}
 
-			value = kdv.Value;
-			this._internalBuckets[hash] = kdv.Next;
-			this.Count--;
-			return true;
+				break;
+			}
 		}
 
 		var kdvLast = kdv;
-		kdv = kdv.Next;
+		kdv = kdv?.Next;
 		while (kdv != null)
 		{
 			if (key.SequenceEqual(kdv.Key.AsSpan()))
@@ -643,9 +639,9 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// Gets the values internal.
 	/// </summary>
 	/// <returns>An ImmutableArray.</returns>
-	private ImmutableArray<TValue> GetValuesInternal()
+	private ImmutableArray<TValue?> GetValuesInternal()
 	{
-		var builder = ImmutableArray.CreateBuilder<TValue>(this.Count);
+		var builder = ImmutableArray.CreateBuilder<TValue?>(this.Count);
 		foreach (var value in this._internalBuckets.Values)
 		{
 			var kdv = value;
@@ -662,63 +658,62 @@ public sealed class CharSpanLookupDictionary<TValue> :
 	/// <summary>
 	/// The keyed value.
 	/// </summary>
-	private class KeyedValue
+	/// <remarks>
+	/// Initializes a new instance of the <see cref="KeyedValue"/> class.
+	/// </remarks>
+	/// <param name="key">The key.</param>
+	/// <param name="keyHash">The key hash.</param>
+	/// <param name="value">The value.</param>
+	private sealed class KeyedValue(string key, ulong keyHash, TValue? value)
 	{
 		/// <summary>
 		/// Gets the key hash.
 		/// </summary>
-		public ulong KeyHash { get; }
+		public ulong KeyHash { get; } = keyHash;
+
 		/// <summary>
 		/// Gets the key.
 		/// </summary>
-		public string Key { get; }
+		public string Key { get; } = key;
+
 		/// <summary>
 		/// Gets or sets the value.
 		/// </summary>
-		public TValue Value { get; set; }
+		public TValue? Value { get; set; } = value;
 
 		/// <summary>
 		/// Gets or sets the next.
 		/// </summary>
-		public KeyedValue Next { get; set; }
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="KeyedValue"/> class.
-		/// </summary>
-		/// <param name="key">The key.</param>
-		/// <param name="keyHash">The key hash.</param>
-		/// <param name="value">The value.</param>
-		public KeyedValue(string key, ulong keyHash, TValue value)
-		{
-			this.KeyHash = keyHash;
-			this.Key = key;
-			this.Value = value;
-		}
+		public KeyedValue? Next { get; set; }
 	}
 
 	/// <summary>
 	/// The enumerator.
 	/// </summary>
-	private class Enumerator :
-		IEnumerator<KeyValuePair<string, TValue>>,
+	private sealed class Enumerator :
+		IEnumerator<KeyValuePair<string, TValue?>>,
 		IDictionaryEnumerator
 	{
 		/// <summary>
 		/// Gets the current.
 		/// </summary>
-		public KeyValuePair<string, TValue> Current { get; private set; }
+		public KeyValuePair<string, TValue?> Current { get; private set; }
+
 		/// <summary>
 		/// Gets the current.
 		/// </summary>
 		object IEnumerator.Current => this.Current;
+
 		/// <summary>
 		/// Gets the key.
 		/// </summary>
 		object IDictionaryEnumerator.Key => this.Current.Key;
+
 		/// <summary>
 		/// Gets the value.
 		/// </summary>
-		object IDictionaryEnumerator.Value => this.Current.Value;
+		object? IDictionaryEnumerator.Value => this.Current.Value;
+
 		/// <summary>
 		/// Gets the entry.
 		/// </summary>
@@ -727,23 +722,23 @@ public sealed class CharSpanLookupDictionary<TValue> :
 		/// <summary>
 		/// Gets the internal dictionary.
 		/// </summary>
-		private readonly CharSpanLookupDictionary<TValue> _internalDictionary;
+		private readonly CharSpanLookupDictionary<TValue?> _internalDictionary;
 
 		/// <summary>
 		/// Gets the internal enumerator.
 		/// </summary>
-		private readonly IEnumerator<KeyValuePair<ulong, KeyedValue>> _internalEnumerator;
+		private readonly IEnumerator<KeyValuePair<ulong, KeyedValue?>> _internalEnumerator;
 
 		/// <summary>
 		/// Gets or sets the current value.
 		/// </summary>
-		private KeyedValue _currentValue;
+		private KeyedValue? _currentValue;
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Enumerator"/> class.
 		/// </summary>
 		/// <param name="spDict">The sp dict.</param>
-		public Enumerator(CharSpanLookupDictionary<TValue> spDict)
+		public Enumerator(CharSpanLookupDictionary<TValue?> spDict)
 		{
 			this._internalDictionary = spDict;
 			this._internalEnumerator = this._internalDictionary._internalBuckets.GetEnumerator();
@@ -762,13 +757,13 @@ public sealed class CharSpanLookupDictionary<TValue> :
 					return false;
 
 				kdv = this._internalEnumerator.Current.Value;
-				this.Current = new KeyValuePair<string, TValue>(kdv.Key, kdv.Value);
+				this.Current = new(kdv.Key, kdv.Value);
 
 				this._currentValue = kdv.Next;
 				return true;
 			}
 
-			this.Current = new KeyValuePair<string, TValue>(kdv.Key, kdv.Value);
+			this.Current = new(kdv.Key, kdv.Value);
 			this._currentValue = kdv.Next;
 			return true;
 		}

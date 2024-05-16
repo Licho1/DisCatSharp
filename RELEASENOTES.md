@@ -1,54 +1,66 @@
 DisCatSharp Release Notes
 
-	Notable Changes
-    - Full support for onboarding
-    - Custom status support
-    - Full support for Application Subscriptions aka. Premium Apps
-    - DiscordOAuth2Client: Allows bots to request and use access tokens for the Discord API.
-    - Support for default select menu values (THANKS MAISY FOR ADDING IT TO DISCORD)
+    Important fix:
+    - Fixed api call spamming for message reactions. We depend on message cache now or return an skeleton message if not found.
+
+    Notable Changes
+    - Added methods to update the apps banner
+    - Fixed guild member banner and avatar decoration data
+    - Extended guild member update event args entity
+    - Fixed invite type name (incorrect one is deprecated now)
+    - Removed test sku id, since that was wrong
+    - Replaced user_id by full user object in message.interaction_metadata
+    - Added bulk ban methods
+
 
 DisCatSharp.Attributes Release Notes
 
-	Added new required feature enums to notate feature usage
+    None
+
 
 DisCatSharp.ApplicationCommands Release Notes
 
-    Contains a rework for command registration (Kinda wacky tho with translation-enabled commands)
+    None
+
 
 DisCatSharp.CommandsNext Release Notes
 
-- None
+    None
 
 DisCatSharp.Interactivity Release Notes
 
-    Contains important bug fixes for interactions and pagination
+    None
 
 DisCatSharp.Common Release Notes
 
-- None
+    None
+
 
 DisCatSharp.Lavalink Release Notes
 
-    Breaking changes:
-    - Lavalink got a complete rework for V4.
-    - Visit the documentation for more information: https://docs.dcs.aitsys.dev/articles/modules/audio/lavalink_v4/intro
+    None
+
 
 DisCatSharp.VoiceNext Release Notes
 
-	Will be deprecated soon and replaced by DisCatSharp.Voice
+    Will be deprecated soon and replaced by DisCatSharp.Voice
+
 
 DisCatSharp.Experimental Release Notes
 
-- None
+    None
+
 
 DisCatSharp.Configuration Release Notes
 
-- None
+    None
+
 
 DisCatSharp.Hosting Release Notes
 
-- None
+    None
+
 
 DisCatSharp.Hosting.DependencyInjection Release Notes
 
-- None
+    None

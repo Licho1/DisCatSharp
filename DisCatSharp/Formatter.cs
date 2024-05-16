@@ -1,8 +1,8 @@
 using System;
 using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
 
+using DisCatSharp.Common.RegularExpressions;
 using DisCatSharp.Entities;
 using DisCatSharp.Enums;
 
@@ -13,15 +13,6 @@ namespace DisCatSharp;
 /// </summary>
 public static class Formatter
 {
-	/// <summary>
-	/// Gets the md sanitize regex.
-	/// </summary>
-	private static Regex s_mdSanitizeRegex { get; } = new(@"([`\*_~<>\[\]\(\)""@\!\&#:\|])", RegexOptions.ECMAScript);
-	/// <summary>
-	/// Gets the md strip regex.
-	/// </summary>
-	private static Regex s_mdStripRegex { get; } = new(@"([`\*_~\[\]\(\)""\|]|<@\!?\d+>|<#\d+>|<@\&\d+>|<:[a-zA-Z0-9_\-]:\d+>|#{1,3} |> |>>> |\* )", RegexOptions.ECMAScript);
-
 	/// <summary>
 	/// Creates a block of code.
 	/// </summary>
@@ -153,7 +144,7 @@ public static class Formatter
 	/// <param name="content">Array of strings to transform into a list.</param>
 	/// <returns>Formatted text.</returns>
 	public static string SimpleList(this string[] content)
-		=> string.Join("\n", content.Select(x => $"* {x}"));
+		=> string.Join("\n", content.Select(x => $"- {x}"));
 
 	/// <summary>
 	/// Creates a URL that won't create a link preview.
@@ -169,9 +160,10 @@ public static class Formatter
 	/// <param name="text">Text to display the link as.</param>
 	/// <param name="url">Url that the link will lead to.</param>
 	/// <param name="altText">Alt text to display on hover.</param>
+	/// <param name="embedless">Whether to supress url embeds.</param>
 	/// <returns>Formatted url.</returns>
-	public static string MaskedUrl(this string text, Uri url, string altText = "")
-		=> $"[{text}]({url}{(!string.IsNullOrWhiteSpace(altText) ? $" \"{altText}\"" : "")})";
+	public static string MaskedUrl(this string text, Uri url, string? altText = null, bool embedless = false)
+		=> $"[{text}]({(embedless ? EmbedlessUrl(url) : url)}{(!string.IsNullOrWhiteSpace(altText) ? $" \"{altText}\"" : string.Empty)})";
 
 	/// <summary>
 	/// Escapes all markdown formatting from specified text.
@@ -179,7 +171,7 @@ public static class Formatter
 	/// <param name="text">Text to sanitize.</param>
 	/// <returns>Sanitized text.</returns>
 	public static string Sanitize(this string text)
-		=> s_mdSanitizeRegex.Replace(text, m => $"\\{m.Groups[1].Value}");
+		=> CommonRegEx.MdSanitizeRegex().Replace(text, m => $"\\{m.Groups[1].Value}");
 
 	/// <summary>
 	/// Removes all markdown formatting from specified text.
@@ -187,7 +179,7 @@ public static class Formatter
 	/// <param name="text">Text to strip of formatting.</param>
 	/// <returns>Formatting-stripped text.</returns>
 	public static string Strip(this string text)
-		=> s_mdStripRegex.Replace(text, m => string.Empty);
+		=> CommonRegEx.MdStripRegex().Replace(text, m => string.Empty);
 
 	/// <summary>
 	/// Creates a mention for specified user or member. Can optionally specify to resolve nicknames.
@@ -197,8 +189,8 @@ public static class Formatter
 	/// <returns>Formatted mention.</returns>
 	public static string Mention(this DiscordUser user, bool nickname = false)
 		=> nickname
-		? $"<@!{user.Id.ToString(CultureInfo.InvariantCulture)}>"
-		: $"<@{user.Id.ToString(CultureInfo.InvariantCulture)}>";
+			? $"<@!{user.Id.ToString(CultureInfo.InvariantCulture)}>"
+			: $"<@{user.Id.ToString(CultureInfo.InvariantCulture)}>";
 
 	/// <summary>
 	/// Creates a mention for specified channel.

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 
 using DisCatSharp.Entities;
-using DisCatSharp.Enums;
 
 using Microsoft.Extensions.Logging;
 
@@ -18,12 +17,13 @@ public sealed class RegisteredDiscordApplicationCommand : DiscordApplicationComm
 	/// <summary>
 	/// Creates a new empty registered discord application command.
 	/// </summary>
-	internal RegisteredDiscordApplicationCommand() { }
+	internal RegisteredDiscordApplicationCommand()
+	{ }
 
 	/// <summary>
-	/// Creates a new registered discord application command to control a dildo. (Lala told me to leave it)
+	/// Creates a new registered discord application command.
 	/// </summary>
-	/// <param name="parent"></param>
+	/// <param name="parent">The original application command</param>
 	internal RegisteredDiscordApplicationCommand(DiscordApplicationCommand parent)
 	{
 		this.AdditionalProperties = parent.AdditionalProperties;
@@ -43,27 +43,25 @@ public sealed class RegisteredDiscordApplicationCommand : DiscordApplicationComm
 		this.UnknownProperties = parent.UnknownProperties;
 		this.Version = parent.Version;
 
-
-
 		try
 		{
 			if (ApplicationCommandsExtension.CommandMethods.Any(x => x.CommandId == this.Id))
 			{
 				this.CommandMethod = ApplicationCommandsExtension.CommandMethods.First(x => x.CommandId == this.Id).Method;
 				this.ContainingType = this.CommandMethod.DeclaringType;
-				this.CustomAttributes = this.CommandMethod.GetCustomAttributes().Where(x => !x.GetType().Namespace.StartsWith("DisCatSharp")).ToList();
+				this.CustomAttributes = this.CommandMethod.GetCustomAttributes().Where(x => !x.GetType().Namespace.StartsWith("DisCatSharp", StringComparison.Ordinal)).ToList();
 			}
 			else if (ApplicationCommandsExtension.ContextMenuCommands.Any(x => x.CommandId == this.Id))
 			{
 				this.CommandMethod = ApplicationCommandsExtension.ContextMenuCommands.First(x => x.CommandId == this.Id).Method;
 				this.ContainingType = this.CommandMethod.DeclaringType;
-				this.CustomAttributes = this.CommandMethod.GetCustomAttributes().Where(x => !x.GetType().Namespace.StartsWith("DisCatSharp")).ToList();
+				this.CustomAttributes = this.CommandMethod.GetCustomAttributes().Where(x => !x.GetType().Namespace.StartsWith("DisCatSharp", StringComparison.Ordinal)).ToList();
 			}
 			else if (ApplicationCommandsExtension.GroupCommands.Any(x => x.CommandId == this.Id))
 			{
 				this.CommandType = ApplicationCommandsExtension.GroupCommands.First(x => x.CommandId == this.Id).Methods.First().Value.DeclaringType;
 				this.ContainingType = this.CommandType.DeclaringType;
-				this.CustomAttributes = this.CommandType.GetCustomAttributes().Where(x => !x.GetType().Namespace.StartsWith("DisCatSharp")).ToList();
+				this.CustomAttributes = this.CommandType.GetCustomAttributes().Where(x => !x.GetType().Namespace.StartsWith("DisCatSharp", StringComparison.Ordinal)).ToList();
 			}
 		}
 		catch (Exception)
@@ -78,13 +76,11 @@ public sealed class RegisteredDiscordApplicationCommand : DiscordApplicationComm
 	/// </summary>
 	public MethodInfo? CommandMethod { get; internal set; }
 
-
 	/// <summary>
 	/// The type that contains the sub commands of this command.
 	/// <see langword="null"/> if command is not a group command or reflection failed.
 	/// </summary>
 	public Type? CommandType { get; internal set; }
-
 
 	/// <summary>
 	/// The type this command is contained in.

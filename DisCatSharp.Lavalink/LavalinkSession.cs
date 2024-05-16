@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -8,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using DisCatSharp;
 using DisCatSharp.Common.Utilities;
 using DisCatSharp.Entities;
 using DisCatSharp.Enums;
@@ -43,6 +41,7 @@ public sealed class LavalinkSession
 		add => this._lavalinkSocketError.Register(value);
 		remove => this._lavalinkSocketError.Unregister(value);
 	}
+
 	private readonly AsyncEvent<LavalinkSession, SocketErrorEventArgs> _lavalinkSocketError;
 
 	/// <summary>
@@ -53,6 +52,7 @@ public sealed class LavalinkSession
 		add => this._lavalinkSessionDisconnected.Register(value);
 		remove => this._lavalinkSessionDisconnected.Unregister(value);
 	}
+
 	private readonly AsyncEvent<LavalinkSession, LavalinkSessionDisconnectedEventArgs> _lavalinkSessionDisconnected;
 
 	/// <summary>
@@ -63,6 +63,7 @@ public sealed class LavalinkSession
 		add => this._lavalinkSessionConnected.Register(value);
 		remove => this._lavalinkSessionConnected.Unregister(value);
 	}
+
 	private readonly AsyncEvent<LavalinkSession, LavalinkSessionConnectedEventArgs> _lavalinkSessionConnected;
 
 	/// <summary>
@@ -73,6 +74,7 @@ public sealed class LavalinkSession
 		add => this._statsReceived.Register(value);
 		remove => this._statsReceived.Unregister(value);
 	}
+
 	private readonly AsyncEvent<LavalinkSession, LavalinkStatsReceivedEventArgs> _statsReceived;
 
 	/// <summary>
@@ -83,6 +85,7 @@ public sealed class LavalinkSession
 		add => this.GuildPlayerDestroyedEvent.Register(value);
 		remove => this.GuildPlayerDestroyedEvent.Unregister(value);
 	}
+
 	internal readonly AsyncEvent<LavalinkSession, GuildPlayerDestroyedEventArgs> GuildPlayerDestroyedEvent;
 
 	/// <summary>
@@ -93,6 +96,7 @@ public sealed class LavalinkSession
 		add => this._websocketClosed.Register(value);
 		remove => this._websocketClosed.Unregister(value);
 	}
+
 	private readonly AsyncEvent<LavalinkSession, LavalinkWebsocketClosedEventArgs> _websocketClosed;
 
 	/// <summary>
@@ -120,6 +124,7 @@ public sealed class LavalinkSession
 	/// Gets the minimum backoff.
 	/// </summary>
 	private const int MINIMUM_BACKOFF = 7500;
+
 	/// <summary>
 	/// Gets the maximum backoff.
 	/// </summary>
@@ -244,7 +249,9 @@ public sealed class LavalinkSession
 	public async Task<string> GetLavalinkVersionAsync()
 	{
 		var versionInfo = await this.Rest.GetVersionAsync().ConfigureAwait(false);
-		return versionInfo.Headers.TryGetValues("Lavalink-Api-Version", out var headerValues) ? headerValues.First() : versionInfo.Response!;
+		return versionInfo.Headers.TryGetValues("Lavalink-Api-Version", out var headerValues)
+			? headerValues.First()
+			: versionInfo.Response!;
 	}
 
 	/// <summary>
@@ -273,7 +280,7 @@ public sealed class LavalinkSession
 	/// </summary>
 	public async Task DestroyGuildPlayersAsync()
 	{
-		if (this.ConnectedPlayersInternal.Any())
+		if (!this.ConnectedPlayersInternal.IsEmpty)
 			foreach (var player in this.ConnectedPlayersInternal.Values)
 				await player.DisconnectAsync().ConfigureAwait(false);
 		this.ConnectedPlayersInternal.Clear();
@@ -327,11 +334,12 @@ public sealed class LavalinkSession
 		var vst = await vstut.Task.ConfigureAwait(false); // Wait for voice state update to get session_id
 		var vsr = await vsrut.Task.ConfigureAwait(false); // Wait for voice server update to get token, guild_id & endpoint
 		await this.Rest.UpdatePlayerVoiceStateAsync(this.Config.SessionId!, channel.Guild.Id, new()
-		{
-			Endpoint = vsr.Endpoint,
-			Token = vsr.VoiceToken,
-			SessionId = vst.SessionId
-		}).ConfigureAwait(false);
+			{
+				Endpoint = vsr.Endpoint,
+				Token = vsr.VoiceToken,
+				SessionId = vst.SessionId
+			})
+			.ConfigureAwait(false);
 		var player = await this.Rest.GetPlayerAsync(this.Config.SessionId!, channel.Guild.Id).ConfigureAwait(false);
 
 		var con = new LavalinkGuildPlayer(this, channel.Guild.Id, player)
@@ -361,14 +369,18 @@ public sealed class LavalinkSession
 	/// <param name="guild">The guild to get the player for.</param>
 	/// <returns>The found player or <see langword="null"/>.</returns>
 	public LavalinkGuildPlayer? GetGuildPlayer(DiscordGuild guild)
-		=> this.ConnectedPlayersInternal.TryGetValue(guild.Id, out var lgp) && lgp.IsConnected ? lgp : null;
+		=> this.ConnectedPlayersInternal.TryGetValue(guild.Id, out var lgp) && lgp.IsConnected
+			? lgp
+			: null;
 
 	/// <summary>
 	/// Gets all guild players.
 	/// </summary>
 	/// <returns>The found players or <see langword="null"/>.</returns>
 	public IReadOnlyList<LavalinkGuildPlayer>? GetGuildPlayersAsync()
-		=> this.ConnectedPlayersInternal.Any() ? this.ConnectedPlayersInternal.Values.ToList() : null;
+		=> !this.ConnectedPlayersInternal.IsEmpty
+			? this.ConnectedPlayersInternal.Values.ToList()
+			: null;
 
 	/// <summary>
 	/// Gets the lavalink player attached to <paramref name="guild"/>.
@@ -640,7 +652,10 @@ public sealed class LavalinkSession
 	/// <param name="client">The websocket client.</param>
 	/// <param name="args">The event args.</param>
 	private Task Lavalink_WebSocket_ExceptionThrown(IWebSocketClient client, SocketErrorEventArgs args)
-		=> this._lavalinkSocketError.InvokeAsync(this, new(client.ServiceProvider) { Exception = args.Exception });
+		=> this._lavalinkSocketError.InvokeAsync(this, new(client.ServiceProvider)
+		{
+			Exception = args.Exception
+		});
 
 	/// <summary>
 	/// Handles the event when the websocket disconnected.
@@ -673,12 +688,14 @@ public sealed class LavalinkSession
 				_ = Task.Run(async () => await this.GuildPlayerDestroyedEvent.InvokeAsync(this, new(kvp.Value)).ConfigureAwait(false));
 				_ = this.ConnectedPlayersInternal.TryRemove(kvp.Key, out _);
 			}
+
 			this.SessionDisconnected?.Invoke(this);
 			await this._lavalinkSessionDisconnected.InvokeAsync(this, new(this, false)).ConfigureAwait(false);
 
 			if (this.Config.SocketAutoReconnect)
 				await this.EstablishConnectionAsync().ConfigureAwait(false);
 		}
+
 		args.Handled = true;
 	}
 

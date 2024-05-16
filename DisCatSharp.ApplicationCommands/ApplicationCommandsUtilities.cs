@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DisCatSharp.ApplicationCommands;
 
+/// <summary>
+/// Provides a set of utility methods for application commands.
+/// </summary>
 public static class ApplicationCommandsUtilities
 {
 	/// <summary>
@@ -42,14 +45,14 @@ public static class ApplicationCommandsUtilities
 		}
 
 		// check if anonymous
-		if (ti.IsGenericType && ti.Name.Contains("AnonymousType") && (ti.Name.StartsWith("<>") || ti.Name.StartsWith("VB$")) && (ti.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic)
+		if (ti.IsGenericType && ti.Name.Contains("AnonymousType") && (ti.Name.StartsWith("<>", StringComparison.Ordinal) || ti.Name.StartsWith("VB$", StringComparison.Ordinal)) && (ti.Attributes & TypeAttributes.NotPublic) == TypeAttributes.NotPublic)
 		{
 			if (ApplicationCommandsExtension.DebugEnabled)
 				ApplicationCommandsExtension.Logger.LogDebug("Anonymous");
 			return false;
 		}
 
-		// check if abstract, static, or not a class
+		// check if abstract, or not a class
 		if (!ti.IsClass || ti.IsAbstract)
 			return false;
 
@@ -83,11 +86,12 @@ public static class ApplicationCommandsUtilities
 				ApplicationCommandsExtension.Logger.LogDebug("Not existent");
 			return false;
 		}
+
 		if (ApplicationCommandsExtension.DebugEnabled)
 			ApplicationCommandsExtension.Logger.LogDebug("Checking method {name}", method.Name);
 
-		// check if static, non-public, abstract, a constructor, or a special name
-		if (method.IsAbstract || method.IsConstructor || method.IsSpecialName) // method.IsStatic
+		// check if non-public, abstract, a constructor, or a special name
+		if (method.IsAbstract || method.IsConstructor || method.IsSpecialName)
 		{
 			if (ApplicationCommandsExtension.DebugEnabled)
 				ApplicationCommandsExtension.Logger.LogDebug("abstract, constructor or special name");
@@ -96,7 +100,7 @@ public static class ApplicationCommandsUtilities
 
 		// check if appropriate return and arguments
 		parameters = method.GetParameters();
-		if (!parameters.Any() || (parameters.First().ParameterType != typeof(ContextMenuContext) && parameters.First().ParameterType != typeof(InteractionContext)) || method.ReturnType != typeof(Task))
+		if (parameters.Length == 0 || (parameters.First().ParameterType != typeof(ContextMenuContext) && parameters.First().ParameterType != typeof(InteractionContext)) || method.ReturnType != typeof(Task))
 		{
 			if (ApplicationCommandsExtension.DebugEnabled)
 				ApplicationCommandsExtension.Logger.LogDebug("Missing first parameter with type ContextMenuContext or InteractionContext");

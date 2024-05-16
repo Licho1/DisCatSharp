@@ -157,15 +157,13 @@ public sealed class DiscordOverwriteBuilder
 	/// </summary>
 	/// <returns>Use this object for creation of new overwrites.</returns>
 	internal DiscordRestOverwrite Build()
-	{
-		return new()
+		=> new()
 		{
 			Allow = this.Allowed,
 			Deny = this.Denied,
 			Id = this.Target,
-			Type = this.Type,
+			Type = this.Type
 		};
-	}
 }
 
 public static class DiscordOverwriteBuilderExtensions
@@ -185,7 +183,11 @@ public static class DiscordOverwriteBuilderExtensions
 		var newList = builderList.ToList();
 
 		if (!newList.Any(x => x.Target == target && x.Type == type))
-			newList.Add(new() { Type = type, Target = target });
+			newList.Add(new()
+			{
+				Type = type,
+				Target = target
+			});
 
 		var discordOverwriteBuilder = newList.First(x => x.Target == target && x.Type == type);
 		discordOverwriteBuilder.Allow(allowed);

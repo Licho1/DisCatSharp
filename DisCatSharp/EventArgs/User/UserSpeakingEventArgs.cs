@@ -13,12 +13,12 @@ public class UserSpeakingEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Gets the users whose speaking state changed.
 	/// </summary>
-	public DiscordUser User { get; internal set; }
+	public DiscordUser? User { get; internal init; }
 
 	/// <summary>
 	/// Gets the SSRC of the audio source.
 	/// </summary>
-	public uint Ssrc { get; internal set; }
+	public uint Ssrc { get; internal init; }
 
 	/// <summary>
 	/// Gets whether this user is speaking.
@@ -28,5 +28,7 @@ public class UserSpeakingEventArgs : DiscordEventArgs
 	/// <summary>
 	/// Initializes a new instance of the <see cref="UserSpeakingEventArgs"/> class.
 	/// </summary>
-	internal UserSpeakingEventArgs(IServiceProvider provider) : base(provider) { }
+	internal UserSpeakingEventArgs(IServiceProvider provider)
+		: base(provider)
+	{ }
 }

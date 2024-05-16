@@ -2,9 +2,19 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ main ]
+    branches:
+        - main
+    paths-ignore:
+        - "DisCatSharp.Docs/**"
+        - "DisCatSharp.Archive/**"
+        - "DisCatSharp.Tools/**"
+        - "DisCatSharp.Logos/**"
+        - "DisCatSharp.Attributes/**"
+        - "*.md"
+        - "*.json"
   pull_request:
-    branches: [ main ]
+    branches:
+        - main
   schedule:
     - cron: '39 18 * * 3'
   merge_group:
@@ -26,18 +36,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
     - name: Set up dotnet
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          8.0.100
+          8.0.204
           7.0.404
-          6.x
+    - name: Restore dependencies
+      run: dotnet restore --no-cache -f -v minimal DisCatSharp.sln
     - name: Build
-      run: |
-        dotnet build -c Release -v minimal --no-self-contained DisCatSharp.sln
+      run: dotnet build -c Release -v minimal --no-restore --no-self-contained DisCatSharp.sln
+    - name: Restore Tools Packages
+      run: dotnet restore --no-cache -f -v minimal DisCatSharp.Tools/DisCatSharp.Tools.sln
+    - name: Build tools
+      run: dotnet build -c Release -v minimal --no-restore DisCatSharp.Tools/DisCatSharp.Tools.sln
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3

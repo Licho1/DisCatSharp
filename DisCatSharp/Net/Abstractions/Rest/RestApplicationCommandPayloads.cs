@@ -28,25 +28,25 @@ internal sealed class RestApplicationCommandCreatePayload : ObservableApiObject
 	/// Gets the name localizations.
 	/// </summary>
 	[JsonProperty("name_localizations", NullValueHandling = NullValueHandling.Ignore)]
-	public Optional<Dictionary<string, string>> NameLocalizations { get; set; }
+	public Optional<Dictionary<string, string>?> NameLocalizations { get; set; }
 
 	/// <summary>
 	/// Gets the description.
 	/// </summary>
 	[JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
-	public string Description { get; set; }
+	public string? Description { get; set; }
 
 	/// <summary>
 	/// Gets the description localizations.
 	/// </summary>
 	[JsonProperty("description_localizations", NullValueHandling = NullValueHandling.Ignore)]
-	public Optional<Dictionary<string, string>> DescriptionLocalizations { get; set; }
+	public Optional<Dictionary<string, string>?> DescriptionLocalizations { get; set; }
 
 	/// <summary>
 	/// Gets the options.
 	/// </summary>
 	[JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
-	public IEnumerable<DiscordApplicationCommandOption> Options { get; set; }
+	public IEnumerable<DiscordApplicationCommandOption>? Options { get; set; }
 
 	/// <summary>
 	/// Whether the command is allowed for everyone.
@@ -76,14 +76,13 @@ internal sealed class RestApplicationCommandCreatePayload : ObservableApiObject
 	/// Gets where the command is allowed at.
 	/// </summary>
 	[JsonProperty("contexts", NullValueHandling = NullValueHandling.Include)]
-	public List<ApplicationCommandContexts>? AllowedContexts { get; set; }
+	public List<InteractionContextType>? AllowedContexts { get; set; }
 
 	/// <summary>
 	/// Gets the allowed integration types.
 	/// </summary>
 	[JsonProperty("integration_types", NullValueHandling = NullValueHandling.Ignore)]
 	public List<ApplicationCommandIntegrationTypes>? IntegrationTypes { get; set; }
-
 }
 
 /// <summary>
@@ -100,26 +99,26 @@ internal sealed class RestApplicationCommandEditPayload : ObservableApiObject
 	/// <summary>
 	/// Gets the name localizations.
 	/// </summary>
-	[JsonProperty("name_localizations")]
-	public Optional<Dictionary<string, string>> NameLocalizations { get; set; }
+	[JsonProperty("name_localizations", NullValueHandling = NullValueHandling.Ignore)]
+	public Optional<Dictionary<string, string>?> NameLocalizations { get; set; }
 
 	/// <summary>
 	/// Gets the description.
 	/// </summary>
 	[JsonProperty("description")]
-	public Optional<string> Description { get; set; }
+	public Optional<string?> Description { get; set; }
 
 	/// <summary>
 	/// Gets the description localizations.
 	/// </summary>
-	[JsonProperty("description_localizations")]
-	public Optional<Dictionary<string, string>> DescriptionLocalizations { get; set; }
+	[JsonProperty("description_localizations", NullValueHandling = NullValueHandling.Ignore)]
+	public Optional<Dictionary<string, string>?> DescriptionLocalizations { get; set; }
 
 	/// <summary>
 	/// Gets the options.
 	/// </summary>
 	[JsonProperty("options", NullValueHandling = NullValueHandling.Ignore)]
-	public Optional<List<DiscordApplicationCommandOption>> Options { get; set; }
+	public Optional<List<DiscordApplicationCommandOption>?> Options { get; set; }
 
 	/// <summary>
 	/// The command needed permissions.
@@ -143,7 +142,7 @@ internal sealed class RestApplicationCommandEditPayload : ObservableApiObject
 	/// Gets where the command is allowed at.
 	/// </summary>
 	[JsonProperty("contexts", NullValueHandling = NullValueHandling.Include)]
-	public Optional<List<ApplicationCommandContexts>?> AllowedContexts { get; set; }
+	public Optional<List<InteractionContextType>?> AllowedContexts { get; set; }
 
 	/// <summary>
 	/// Gets the allowed integration types.
@@ -174,6 +173,13 @@ internal sealed class RestInteractionResponsePayload : ObservableApiObject
 	/// </summary>
 	[JsonProperty("attachments", NullValueHandling = NullValueHandling.Ignore)]
 	public List<DiscordAttachment> Attachments { get; set; }
+
+	// TODO: Implement if it gets added to the api
+	/// <summary>
+	/// Gets the callback hints.
+	/// </summary>
+	[JsonProperty("hints", NullValueHandling = NullValueHandling.Ignore)]
+	public IReadOnlyList<DiscordInteractionCallbackHint>? CallbackHints { get; set; }
 }
 
 /// <summary>
@@ -192,6 +198,13 @@ internal sealed class RestInteractionModalResponsePayload : ObservableApiObject
 	/// </summary>
 	[JsonProperty("data", NullValueHandling = NullValueHandling.Ignore)]
 	public DiscordInteractionApplicationCommandModalCallbackData Data { get; set; }
+
+	// TODO: Implement if it gets added to the api
+	/// <summary>
+	/// Gets the callback hints.
+	/// </summary>
+	[JsonProperty("hints", NullValueHandling = NullValueHandling.Ignore)]
+	public IReadOnlyList<DiscordInteractionCallbackHint>? CallbackHints { get; set; }
 }
 
 /// <summary>
@@ -210,6 +223,13 @@ internal sealed class RestInteractionIframeResponsePayload : ObservableApiObject
 	/// </summary>
 	[JsonProperty("data", NullValueHandling = NullValueHandling.Ignore)]
 	public DiscordInteractionApplicationCommandIframeCallbackData Data { get; set; }
+
+	// TODO: Implement if it gets added to the api
+	/// <summary>
+	/// Gets the callback hints.
+	/// </summary>
+	[JsonProperty("hints", NullValueHandling = NullValueHandling.Ignore)]
+	public IReadOnlyList<DiscordInteractionCallbackHint>? CallbackHints { get; set; }
 }
 
 /// <summary>
@@ -258,6 +278,12 @@ internal sealed class RestFollowupMessageCreatePayload : ObservableApiObject
 	/// </summary>
 	[JsonProperty("attachments", NullValueHandling = NullValueHandling.Ignore)]
 	public List<DiscordAttachment> Attachments { get; set; }
+
+	/// <summary>
+	/// Gets or sets the poll request.
+	/// </summary>
+	[JsonProperty("poll", NullValueHandling = NullValueHandling.Ignore)]
+	public DiscordPollRequest? DiscordPollRequest { get; internal set; }
 }
 
 /// <summary>
