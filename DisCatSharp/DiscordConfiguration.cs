@@ -240,11 +240,18 @@ public sealed class DiscordConfiguration
 	public IServiceProvider ServiceProvider { internal get; init; } = new ServiceCollection().BuildServiceProvider(true);
 
 	/// <summary>
-	/// <para>Whether to report missing fields for discord object.</para>
+	/// <para>Whether to enable sentry.</para>
 	/// <para>This helps us to track missing data and library bugs better.</para>
 	/// <para>Defaults to <see langword="false"/>.</para>
+	/// <para><note type="note">Please refer to the <a href="https://docs.dcs.aitsys.dev/articles/misc/sentry">docs</a> for more information.</note></para>
 	/// </summary>
 	public bool EnableSentry { internal get; set; } = false;
+
+	/// <summary>
+	/// <para>Whether to attach recent log entris.</para>
+	/// <para>Defaults to <see langword="false"/>.</para>
+	/// </summary>
+	public bool AttachRecentLogEntries { internal get; set; } = false;
 
 	/// <summary>
 	/// <para>Whether to attach the bots username and id to sentry reports.</para>
@@ -273,6 +280,12 @@ public sealed class DiscordConfiguration
 	/// <para>Defaults to <see langword="false"/>.</para>
 	/// </summary>
 	public bool EnablePayloadReceivedEvent { internal get; set; } = false;
+
+	/// <summary>
+	/// <para>Whether to replace every discord-based id with <c>{DISCORD_ID}</c>.</para>
+	/// <para>Defaults to <see langword="false"/>.</para>
+	/// </summary>
+	public bool EnableDiscordIdScrubber { internal get; set; } = false;
 
 	/// <summary>
 	/// <para>Sets which exceptions to track with sentry.</para>
@@ -306,6 +319,12 @@ public sealed class DiscordConfiguration
 	/// <para>Defaults <see langword="false"/>.</para>
 	/// </summary>
 	internal bool EnableLibraryDeveloperMode { get; set; } = false;
+
+	/// <summary>
+	/// <para>Whether to disable all safety scrubbers.</para>
+	/// <para>Can only be enabled by whitelisted developers.</para>
+	/// </summary>
+	internal bool DisableScrubber { get; set; } = false;
 
 	/// <summary>
 	/// Whether to turn sentry's debug mode on.
@@ -413,12 +432,15 @@ public sealed class DiscordConfiguration
 		this.Timezone = other.Timezone;
 		this.ReportMissingFields = other.ReportMissingFields;
 		this.EnableSentry = other.EnableSentry;
+		this.AttachRecentLogEntries = other.AttachRecentLogEntries;
 		this.AttachUserInfo = other.AttachUserInfo;
 		this.FeedbackEmail = other.FeedbackEmail;
 		this.DeveloperUserId = other.DeveloperUserId;
+		this.EnableDiscordIdScrubber = other.EnableDiscordIdScrubber;
 		this.HasShardLogger = other.HasShardLogger;
 		this._exceptions = other._exceptions;
 		this.EnableLibraryDeveloperMode = other.EnableLibraryDeveloperMode;
+		this.DisableScrubber = other.DisableScrubber;
 		this.SentryDebug = other.SentryDebug;
 		this.DisableExceptionFilter = other.DisableExceptionFilter;
 		this.CustomSentryDsn = other.CustomSentryDsn;

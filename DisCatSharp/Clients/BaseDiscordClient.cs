@@ -195,6 +195,8 @@ public abstract class BaseDiscordClient : IDisposable
 					o.IsEnvironmentUser = false;
 					o.UseAsyncFileIO = true;
 					o.EnableScopeSync = true;
+					if (!this.Configuration.AttachRecentLogEntries)
+						o.MaxBreadcrumbs = 0;
 					if (!this.Configuration.DisableExceptionFilter)
 						o.AddExceptionFilter(new DisCatSharpExceptionFilter(this.Configuration));
 					o.Debug = this.Configuration.SentryDebug;
@@ -247,8 +249,29 @@ public abstract class BaseDiscordClient : IDisposable
 				IsEnvironmentUser = false,
 				UseAsyncFileIO = true,
 				EnableScopeSync = true,
-				Debug = this.Configuration.SentryDebug
+				Debug = this.Configuration.SentryDebug,
+				MaxBreadcrumbs = this.Configuration.AttachRecentLogEntries ? 100 : 0
 			};
+
+			if (!this.Configuration.DisableScrubber)
+			{
+				options.SetBeforeBreadcrumb(b
+					=> new(Utilities.StripIds(Utilities.StripTokens(b.Message), this.Configuration.EnableDiscordIdScrubber)!,
+						b.Type!,
+						b.Data?.Select(x => new KeyValuePair<string, string>(x.Key, Utilities.StripIds(Utilities.StripTokens(x.Value), this.Configuration.EnableDiscordIdScrubber)!))
+							.ToDictionary(x => x.Key, x => x.Value),
+						b.Category,
+						b.Level));
+
+				options.SetBeforeSendTransaction(tr =>
+				{
+					if (tr.Request.Data is string str)
+						tr.Request.Data = Utilities.StripIds(Utilities.StripTokens(str), this.Configuration.EnableDiscordIdScrubber);
+
+					return tr;
+				});
+			}
+
 			options.SetBeforeSend((e, _) =>
 			{
 				if (!this.Configuration.DisableExceptionFilter)
@@ -436,7 +459,6 @@ public abstract class BaseDiscordClient : IDisposable
 	/// Enables user app functionality.
 	/// </summary>
 	/// <returns>The updated application.</returns>
-	[DiscordInExperiment, RequiresFeature(Features.Experiment, "Requires you to be part of the user apps experiment and the apps owner.")]
 	public async Task<DiscordApplication> EnableUserAppsAsync()
 	{
 		var currentApplication = await this.GetCurrentApplicationAsync().ConfigureAwait(false);
@@ -474,7 +496,6 @@ public abstract class BaseDiscordClient : IDisposable
 	/// <param name="flags">The new application flags. Can be only limited gateway intents.</param>
 	/// <param name="integrationTypesConfig">The new integration types configuration.</param>
 	/// <returns>The updated application.</returns>
-	[DiscordInExperiment, RequiresFeature(Features.Experiment, "Requires you to be part of the user apps experiment and the apps owner.")]
 	public async Task<DiscordApplication> UpdateCurrentApplicationInfoAsync(
 		Optional<string?> description,
 		Optional<string?> interactionsEndpointUrl,
@@ -484,7 +505,7 @@ public abstract class BaseDiscordClient : IDisposable
 		Optional<Stream?> icon,
 		Optional<Stream?> coverImage,
 		Optional<ApplicationFlags> flags,
-		[DiscordInExperiment] Optional<DiscordIntegrationTypesConfig?> integrationTypesConfig
+		Optional<DiscordIntegrationTypesConfig?> integrationTypesConfig
 	)
 	{
 		var iconb64 = ImageTool.Base64FromStream(icon);

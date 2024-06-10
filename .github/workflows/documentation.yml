@@ -22,7 +22,7 @@ jobs:
       uses: actions/setup-dotnet@v4.0.0
       with:
         dotnet-version: |
-          8.0.204
+          8.0.301
           7.0.403
     - name: Git fetch unshallow
       run: git fetch --unshallow
@@ -46,7 +46,7 @@ jobs:
       with:
         name: dcs-docs.zip
         path: dcs-docs.zip
-        retention-days: 30
+        retention-days: 5
 #    - name: Force add build files
 #      run: git add DisCatSharp.Docs/obj/.cache/build/* -f
 #    - name: Commit and push changes

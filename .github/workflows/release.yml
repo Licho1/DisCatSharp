@@ -56,13 +56,13 @@ jobs:
         uses: actions/setup-dotnet@v4.0.0
         with:
           dotnet-version: |
-            8.0.204
+            8.0.301
             7.0.404
       - name: Set outputs
         if: ${{ github.event.inputs.packages_to_release == 'DisCatSharp' }}
         id: vars
         run: |
-          echo "version=10.6.0" >> $GITHUB_OUTPUT
+          echo "version=10.6.5" >> $GITHUB_OUTPUT
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: "Create Sentry prod release"
         if: ${{ !inputs.release_as_prerelease && github.event.inputs.packages_to_release == 'DisCatSharp' }}
@@ -115,6 +115,7 @@ jobs:
         if: ${{inputs.release_as_prerelease && github.event.inputs.packages_to_release == 'DisCatSharp.Tools'}}
         run: ./DisCatSharp.Tools/rebuild-tools.ps1 -ArtifactLocation ./dcs-artifacts -Configuration Release -VersionSuffix ${{github.event.inputs.version_suffix}}
       - name: Remove invalid packages
+        if: ${{ github.event.inputs.packages_to_release == 'DisCatSharp' }}
         shell: pwsh
         run: rm *.symbols.*
         working-directory: ./dcs-artifacts
